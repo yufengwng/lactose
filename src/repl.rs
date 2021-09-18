@@ -1,13 +1,13 @@
 use std::io;
 use std::io::Write;
 
-use tassel::vm::Aqvm;
+use lite::vm::Aqvm;
 
 pub fn start() -> io::Result<()> {
     let mut vm = Aqvm::new();
     let mut buffer = String::new();
     loop {
-        print!("> ");
+        print!("λ ");
         io::stdout().flush()?;
 
         let mut lines = Vec::new();

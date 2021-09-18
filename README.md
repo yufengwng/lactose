@@ -1,1 +1,1 @@
-\# tassel
+\# lite
