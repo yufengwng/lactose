@@ -1,50 +1,25 @@
-#[derive(PartialEq)]
-pub enum TKind {
-    Err,
-    Num,
-    Lparen,
-    Rparen,
-    Caret,
-    Plus,
-    Minus,
-    Star,
-    Slash,
-    Percent,
-}
-
-pub struct Token<'a> {
-    pub kind: TKind,
-    lexeme: &'a [u8],
-}
-
-impl<'a> Token<'a> {
-    pub fn new(kind: TKind, lexeme: &'a [u8]) -> Self {
-        Self { kind, lexeme }
-    }
-
-    pub fn lexeme(&self) -> &'a str {
-        std::str::from_utf8(self.lexeme).unwrap()
-    }
-}
+use crate::ast::TKind;
+use crate::ast::Token;
 
 pub struct Lexer<'a> {
     src: &'a [u8],
-    len: usize,
+    head: usize,
+    curr: usize,
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(src: &'a str) -> Self {
-        Self { src: src.as_bytes(), len: 0 }
+        Self {
+            src: src.as_bytes(),
+            head: 0,
+            curr: 0,
+        }
     }
 
-    pub fn next(&mut self) -> Option<Token> {
+    pub fn scan(&mut self) -> Token<'a> {
+        self.skip_spacing();
         if self.is_eof() {
-            return None;
-        }
-
-        self.skip_noise();
-        if self.is_eof() {
-            return None;
+            return Token::eof();
         }
 
         let kind = match self.advance() {
@@ -56,68 +31,74 @@ impl<'a> Lexer<'a> {
             b'*' => TKind::Star,
             b'/' => TKind::Slash,
             b'%' => TKind::Percent,
-            c if is_digit(c) => {
-                while !self.is_eof() && is_digit(self.curr()) {
-                    self.consume();
-                }
-                if is_digit(self.peek(1)) && self.curr() == b'.' {
-                    self.consume();
-                    self.consume();
-                    while !self.is_eof() && is_digit(self.curr()) {
-                        self.consume();
-                    }
-                }
-                TKind::Num
-            }
+            c if is_ident(c) => TKind::Ident,
+            c if is_digit(c) => self.scan_num(),
             _ => TKind::Err,
         };
 
-        let token = self.make_token(kind);
-        self.shift_source();
-        Some(token)
+        let token = Token::new(kind, self.bytes());
+        self.shift();
+        token
+    }
+
+    fn scan_num(&mut self) -> TKind {
+        while !self.is_eof() && is_digit(self.curr()) {
+            self.consume();
+        }
+        if is_digit(self.peek(1)) && self.curr() == b'.' {
+            self.consume();
+            self.consume();
+            while !self.is_eof() && is_digit(self.curr()) {
+                self.consume();
+            }
+        }
+        TKind::Num
     }
 
     fn is_eof(&self) -> bool {
-        self.len >= self.src.len()
+        self.curr >= self.src.len()
     }
 
     fn curr(&self) -> u8 {
-        self.src[self.len]
+        self.src[self.curr]
+    }
+
+    fn bytes(&self) -> &'a [u8] {
+        &self.src[self.head..self.curr]
     }
 
     fn peek(&self, look_ahead: usize) -> u8 {
-        if self.len + look_ahead < self.src.len() {
-            self.src[self.len + look_ahead]
+        if self.curr + look_ahead < self.src.len() {
+            self.src[self.curr + look_ahead]
         } else {
             b'\0'
         }
     }
 
     fn advance(&mut self) -> u8 {
-        let ch = self.src[self.len];
-        self.len += 1;
+        let ch = self.src[self.curr];
+        self.curr += 1;
         ch
     }
 
     fn consume(&mut self) {
-        self.len += 1;
+        self.curr += 1;
     }
 
-    fn shift_source(&mut self) {
-        self.src = &self.src[self.len..];
-        self.len = 0;
+    fn shift(&mut self) {
+        self.head = self.curr;
     }
 
-    fn make_token(&self, kind: TKind) -> Token<'a> {
-        Token::new(kind, &self.src[0..self.len])
-    }
-
-    fn skip_noise(&mut self) {
+    fn skip_spacing(&mut self) {
         while !self.is_eof() && is_spacing(self.curr()) {
             self.consume();
         }
-        self.shift_source();
+        self.shift();
     }
+}
+
+fn is_ident(c: u8) -> bool {
+    c == b'_'
 }
 
 fn is_digit(c: u8) -> bool {

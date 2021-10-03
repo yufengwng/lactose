@@ -1,0 +1,19 @@
+# Syntactical Rules
+
+program
+    : expr
+
+expr
+    : expr ( '+' | '-' ) expr         # Terms
+    | expr ( '*' | '/' | '%' ) expr   # Factors
+    | '-' expr                        # Negation
+    | expr '^' expr                   # Exponents
+    | '(' expr ')'                    # Parenthesis
+    | IDENT                           # Identifiers
+    | NUM                             # Constants
+
+# Lexical Rules
+
+IDENT   : '_'
+NUM     : [0-9]+ ( '.' [0-9]+ )?
+SPACING : [ \t\v\f\r\n]+ -> ignored
