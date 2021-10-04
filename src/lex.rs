@@ -23,6 +23,7 @@ impl<'a> Lexer<'a> {
         }
 
         let kind = match self.advance() {
+            b';' => TKind::Semi,
             b'(' => TKind::Lparen,
             b')' => TKind::Rparen,
             b'^' => TKind::Caret,

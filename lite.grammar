@@ -1,7 +1,7 @@
 # Syntactical Rules
 
 program
-    : expr
+    : expr ( ';' expr )* ';'?
 
 expr
     : expr ( '+' | '-' ) expr         # Terms

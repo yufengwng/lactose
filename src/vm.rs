@@ -13,26 +13,27 @@ impl Aqvm {
 
     pub fn run(&mut self, source: &str) {
         let lexer = Lexer::new(source);
-        let mut parser = Parser::new(lexer);
+        let parser = Parser::new(lexer);
 
-        let expr = match parser.ast() {
-            Ok(e) => e,
+        let list = match parser.ast() {
+            Ok(ls) => ls,
             Err(msg) => {
                 eprintln!("[E] {}", msg);
                 return;
             }
         };
 
-        let value = match self.eval(expr) {
-            Ok(v) => v,
-            Err(msg) => {
-                eprintln!("[E] {}", msg);
-                return;
-            }
-        };
+        for expr in list {
+            self.underscore = match self.eval(expr) {
+                Ok(value) => value,
+                Err(msg) => {
+                    eprintln!("[E] {}", msg);
+                    return;
+                }
+            };
+        }
 
-        self.underscore = value;
-        println!("{}", value);
+        println!("{}", self.underscore);
     }
 
     fn eval(&self, expr: Expr) -> Result<f64, String> {

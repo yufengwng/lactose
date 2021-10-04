@@ -5,6 +5,7 @@ use crate::lex::Lexer;
 
 pub struct Parser<'a> {
     lexer: Lexer<'a>,
+    stack: Vec<Expr>,
     curr: Token<'a>,
     next: Token<'a>,
 }
@@ -13,26 +14,36 @@ impl<'a> Parser<'a> {
     pub fn new(lexer: Lexer<'a>) -> Self {
         Self {
             lexer,
+            stack: Vec::new(),
             curr: Token::eof(),
             next: Token::eof(),
         }
     }
 
-    pub fn ast(&mut self) -> Result<Expr, String> {
-        std::mem::swap(&mut self.curr, &mut self.next);
+    pub fn ast(mut self) -> Result<Vec<Expr>, String> {
+        self.curr = self.next.clone();
         self.next = self.lexer.scan();
         self.advance()?;
 
-        let expr = self.expression()?;
-        match self.next.kind {
-            TKind::EOF => Ok(expr),
-            TKind::Err => Err(format!("unrecognized character '{}'", self.next.lexeme())),
-            _ => Err(format!("currenly only one expression allowed")),
+        self.expression()?;
+        while self.next.kind != TKind::EOF {
+            if self.next.kind == TKind::Err {
+                return Err(format!("unrecognized character '{}'", self.next.lexeme()));
+            }
+            self.consume(TKind::Semi, "expected ';' after expression")?;
+            if self.next.kind != TKind::EOF {
+                self.advance()?;
+                self.expression()?;
+            } else {
+                break;
+            }
         }
+
+        Ok(self.stack)
     }
 
     fn advance(&mut self) -> Result<(), String> {
-        std::mem::swap(&mut self.curr, &mut self.next);
+        self.curr = self.next.clone();
         self.next = self.lexer.scan();
         match self.curr.kind {
             TKind::EOF => Err(format!("reached end-of-file")),
@@ -48,85 +59,108 @@ impl<'a> Parser<'a> {
         Err(message.to_owned())
     }
 
-    fn expression(&mut self) -> Result<Expr, String> {
+    fn expression(&mut self) -> Result<(), String> {
         self.expr_precedence(Prec::Term)
     }
 
-    fn expr_precedence(&mut self, prec: Prec) -> Result<Expr, String> {
+    fn expr_precedence(&mut self, prec: Prec) -> Result<(), String> {
         let prefix_fn = self.op_prefix(&self.curr.kind);
         let prefix_fn = match prefix_fn {
             None => return Err(format!("expected an expression")),
             Some(f) => f,
         };
 
-        let mut expr = prefix_fn(self)?;
+        prefix_fn(self)?;
         while prec <= Prec::of(&self.next.kind) {
             self.advance()?;
             let infix_fn = self.op_infix(&self.curr.kind);
             let infix_fn = infix_fn.expect("infix");
-            expr = infix_fn(self, expr)?;
+            infix_fn(self)?;
         }
 
-        Ok(expr)
+        Ok(())
     }
 
-    fn expr_binary(&mut self, lhs: Expr) -> Result<Expr, String> {
+    fn expr_binary(&mut self) -> Result<(), String> {
         let operator = self.curr.kind;
         let prec = Prec::of(&operator);
-        self.advance()?;
 
-        let rhs = self.expr_precedence(prec.stronger())?;
-        Ok(match operator {
+        self.advance()?;
+        self.expr_precedence(prec.higher())?;
+
+        let rhs = self.stack.pop().unwrap();
+        let lhs = self.stack.pop().unwrap();
+
+        let expr = match operator {
             TKind::Plus => Expr::Add(Box::new(lhs), Box::new(rhs)),
             TKind::Minus => Expr::Sub(Box::new(lhs), Box::new(rhs)),
             TKind::Star => Expr::Mul(Box::new(lhs), Box::new(rhs)),
             TKind::Slash => Expr::Div(Box::new(lhs), Box::new(rhs)),
             TKind::Percent => Expr::Mod(Box::new(lhs), Box::new(rhs)),
             _ => unreachable!(),
-        })
+        };
+
+        self.stack.push(expr);
+        Ok(())
     }
 
-    fn expr_unary(&mut self) -> Result<Expr, String> {
+    fn expr_unary(&mut self) -> Result<(), String> {
         let operator = self.curr.kind;
-        self.advance()?;
 
-        let expr = self.expr_precedence(Prec::Unary)?;
-        Ok(match operator {
+        self.advance()?;
+        self.expr_precedence(Prec::Unary)?;
+
+        let expr = self.stack.pop().unwrap();
+        let expr = match operator {
             TKind::Minus => Expr::Negate(Box::new(expr)),
             _ => unreachable!(),
-        })
+        };
+
+        self.stack.push(expr);
+        Ok(())
     }
 
-    fn expr_power(&mut self, lhs: Expr) -> Result<Expr, String> {
+    fn expr_power(&mut self) -> Result<(), String> {
         let operator = self.curr.kind;
-        self.advance()?;
 
-        let rhs = self.expr_precedence(Prec::Power)?;
-        Ok(match operator {
+        self.advance()?;
+        self.expr_precedence(Prec::Power)?;
+
+        let rhs = self.stack.pop().unwrap();
+        let lhs = self.stack.pop().unwrap();
+
+        let expr = match operator {
             TKind::Caret => Expr::Power(Box::new(lhs), Box::new(rhs)),
             _ => unreachable!(),
-        })
+        };
+
+        self.stack.push(expr);
+        Ok(())
     }
 
-    fn expr_group(&mut self) -> Result<Expr, String> {
+    fn expr_group(&mut self) -> Result<(), String> {
         self.advance()?;
-        let expr = self.expression()?;
+        self.expression()?;
         self.consume(TKind::Rparen, "expected ')' after expression")?;
-        Ok(expr)
+        Ok(())
     }
 
-    fn expr_num(&mut self) -> Result<Expr, String> {
+    fn expr_num(&mut self) -> Result<(), String> {
         match self.curr.lexeme().parse::<f64>() {
-            Err(_) => Err(format!("invalid number format")),
-            Ok(num) => Ok(Expr::Num(num)),
+            Err(_) => return Err(format!("invalid number format")),
+            Ok(num) => {
+                self.stack.push(Expr::Num(num));
+                Ok(())
+            }
         }
     }
 
-    fn expr_ident(&mut self) -> Result<Expr, String> {
-        Ok(Expr::Ident)
+    fn expr_ident(&mut self) -> Result<(), String> {
+        self.stack.push(Expr::Ident);
+        Ok(())
     }
 
-    fn op_prefix(&self, tkind: &TKind) -> Option<Box<PrefixParseFn<'a>>> {
+    fn op_prefix(&self, tkind: &TKind) -> Option<Box<ParseFn<'a>>> {
         Some(Box::new(match tkind {
             TKind::Num => Self::expr_num,
             TKind::Ident => Self::expr_ident,
@@ -136,7 +170,7 @@ impl<'a> Parser<'a> {
         }))
     }
 
-    fn op_infix(&self, tkind: &TKind) -> Option<Box<InfixParseFn<'a>>> {
+    fn op_infix(&self, tkind: &TKind) -> Option<Box<ParseFn<'a>>> {
         Some(Box::new(match tkind {
             TKind::Caret => Self::expr_power,
             TKind::Plus => Self::expr_binary,
@@ -149,13 +183,12 @@ impl<'a> Parser<'a> {
     }
 }
 
-type PrefixParseFn<'a> = fn(&mut Parser<'a>) -> Result<Expr, String>;
-type InfixParseFn<'a> = fn(&mut Parser<'a>, Expr) -> Result<Expr, String>;
+type ParseFn<'a> = fn(&mut Parser<'a>) -> Result<(), String>;
 
 #[repr(u8)]
 #[derive(PartialEq, PartialOrd)]
 enum Prec {
-    None,
+    None = 0,
     Term,   // + -
     Factor, // * / %
     Unary,  // -
@@ -176,7 +209,7 @@ impl Prec {
         }
     }
 
-    fn stronger(&self) -> Self {
+    fn higher(&self) -> Self {
         match self {
             Self::None => Self::Term,
             Self::Term => Self::Factor,

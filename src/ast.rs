@@ -4,6 +4,7 @@ pub enum TKind {
     Err,
     Num,
     Ident,
+    Semi,
     Lparen,
     Rparen,
     Caret,
@@ -14,9 +15,10 @@ pub enum TKind {
     Percent,
 }
 
+#[derive(Clone)]
 pub struct Token<'a> {
     pub kind: TKind,
-    bytes: &'a [u8],
+    span: &'a [u8],
 }
 
 impl<'a> Token<'a> {
@@ -24,12 +26,12 @@ impl<'a> Token<'a> {
         Self::new(TKind::EOF, &[])
     }
 
-    pub fn new(kind: TKind, bytes: &'a [u8]) -> Self {
-        Self { kind, bytes }
+    pub fn new(kind: TKind, span: &'a [u8]) -> Self {
+        Self { kind, span }
     }
 
     pub fn lexeme(&self) -> &'a str {
-        std::str::from_utf8(self.bytes).unwrap()
+        std::str::from_utf8(self.span).unwrap()
     }
 }
 
