@@ -3,6 +3,8 @@ pub enum TKind {
     EOF,
     Err,
     Num,
+    True,
+    False,
     Ident,
     Semi,
     Lparen,
@@ -38,6 +40,7 @@ impl<'a> Token<'a> {
 pub enum Expr {
     Ident,
     Num(f64),
+    Bool(bool),
     Power(Box<Expr>, Box<Expr>),
     Negate(Box<Expr>),
     Mul(Box<Expr>, Box<Expr>),

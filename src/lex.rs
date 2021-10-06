@@ -23,6 +23,7 @@ impl<'a> Lexer<'a> {
         }
 
         let kind = match self.advance() {
+            b'_' => TKind::Ident,
             b';' => TKind::Semi,
             b'(' => TKind::Lparen,
             b')' => TKind::Rparen,
@@ -32,8 +33,8 @@ impl<'a> Lexer<'a> {
             b'*' => TKind::Star,
             b'/' => TKind::Slash,
             b'%' => TKind::Percent,
-            c if is_ident(c) => TKind::Ident,
             c if is_digit(c) => self.scan_num(),
+            c if is_alpha(c) => self.scan_bool(),
             _ => TKind::Err,
         };
 
@@ -54,6 +55,24 @@ impl<'a> Lexer<'a> {
             }
         }
         TKind::Num
+    }
+
+    fn scan_bool(&mut self) -> TKind {
+        self.curr = self.head + 4;
+        let t_str = "true".as_bytes();
+        if self.curr <= self.src.len() && self.bytes() == t_str {
+            return TKind::True;
+        }
+
+        self.curr = self.head + 5;
+        let f_str = "false".as_bytes();
+        if self.curr <= self.src.len() && self.bytes() == f_str {
+            return TKind::False;
+        }
+
+        // Restore current char pointer and signal error.
+        self.curr = self.head + 1;
+        TKind::Err
     }
 
     fn is_eof(&self) -> bool {
@@ -98,12 +117,12 @@ impl<'a> Lexer<'a> {
     }
 }
 
-fn is_ident(c: u8) -> bool {
-    c == b'_'
+fn is_alpha(c: u8) -> bool {
+    c.is_ascii_alphabetic()
 }
 
 fn is_digit(c: u8) -> bool {
-    (c as char).is_ascii_digit()
+    c.is_ascii_digit()
 }
 
 fn is_spacing(c: u8) -> bool {

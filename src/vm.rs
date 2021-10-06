@@ -1,5 +1,4 @@
 use crate::ast::Expr;
-use crate::lex::Lexer;
 use crate::parse::Parser;
 
 pub struct Aqvm {
@@ -12,8 +11,7 @@ impl Aqvm {
     }
 
     pub fn run(&mut self, source: &str) {
-        let lexer = Lexer::new(source);
-        let parser = Parser::new(lexer);
+        let parser = Parser::new(source);
 
         let list = match parser.ast() {
             Ok(ls) => ls,
@@ -39,6 +37,7 @@ impl Aqvm {
     fn eval(&self, expr: Expr) -> Result<f64, String> {
         match expr {
             Expr::Num(num) => Ok(num),
+            Expr::Bool(b) => Ok(if b { 1.0 } else { 0.0 }),
             Expr::Ident => Ok(self.underscore),
             Expr::Power(base, power) => {
                 let base = self.eval(*base)?;

@@ -10,7 +10,7 @@ expr
     | expr '^' expr                   # Exponents
     | '(' expr ')'                    # Parenthesis
     | IDENT                           # Identifiers
-    | NUM                             # Constants
+    | NUM | 'true' | 'false'          # Literals
 
 # Lexical Rules
 
