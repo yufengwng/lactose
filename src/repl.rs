@@ -7,7 +7,7 @@ pub fn start() -> io::Result<()> {
     let mut vm = Aqvm::new();
     let mut buffer = String::new();
     loop {
-        print!("λ ");
+        print!("lt> ");
         io::stdout().flush()?;
 
         let mut lines = Vec::new();
@@ -30,7 +30,7 @@ pub fn start() -> io::Result<()> {
             let line = input[..input.len()-1].to_owned();
             lines.push(line);
 
-            print!("~ ");
+            print!("··· "); // middot
             io::stdout().flush()?;
         }
 
