@@ -15,6 +15,12 @@ pub enum TKind {
     Star,
     Slash,
     Percent,
+    Lt,
+    Gt,
+    LtEq,
+    GtEq,
+    EqEq,
+    NotEq,
 }
 
 #[derive(Clone)]
@@ -37,6 +43,41 @@ impl<'a> Token<'a> {
     }
 }
 
+#[derive(PartialEq)]
+pub enum CompOp {
+    Lt,
+    Gt,
+    LtEq,
+    GtEq,
+    EqEq,
+    NotEq,
+}
+
+impl CompOp {
+    pub fn from(tkind: TKind) -> Self {
+        match tkind {
+            TKind::Lt => CompOp::Lt,
+            TKind::Gt => CompOp::Gt,
+            TKind::LtEq => CompOp::LtEq,
+            TKind::GtEq => CompOp::GtEq,
+            TKind::EqEq => CompOp::EqEq,
+            TKind::NotEq => CompOp::NotEq,
+            _ => panic!(),
+        }
+    }
+
+    pub fn apply(&self, lhs: f64, rhs: f64) -> bool {
+        match self {
+            CompOp::Lt => lhs < rhs,
+            CompOp::Gt => lhs > rhs,
+            CompOp::LtEq => lhs <= rhs,
+            CompOp::GtEq => lhs >= rhs,
+            CompOp::EqEq => lhs == rhs,
+            CompOp::NotEq => lhs != rhs,
+        }
+    }
+}
+
 pub enum Expr {
     Ident,
     Num(f64),
@@ -48,4 +89,5 @@ pub enum Expr {
     Mod(Box<Expr>, Box<Expr>),
     Add(Box<Expr>, Box<Expr>),
     Sub(Box<Expr>, Box<Expr>),
+    Compare(Box<Expr>, Vec<(CompOp, Expr)>),
 }

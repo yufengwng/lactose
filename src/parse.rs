@@ -1,3 +1,4 @@
+use crate::ast::CompOp;
 use crate::ast::Expr;
 use crate::ast::TKind;
 use crate::ast::Token;
@@ -60,7 +61,7 @@ impl<'a> Parser<'a> {
     }
 
     fn expression(&mut self) -> Result<(), String> {
-        self.expr_precedence(Prec::Term)
+        self.expr_precedence(Prec::Compare)
     }
 
     fn expr_precedence(&mut self, prec: Prec) -> Result<(), String> {
@@ -69,6 +70,35 @@ impl<'a> Parser<'a> {
             self.advance()?;
             self.dispatch_infix_op()?;
         }
+        Ok(())
+    }
+
+    fn expr_compare(&mut self) -> Result<(), String> {
+        let init = self.stack.pop().unwrap();
+
+        let mut compares = Vec::new();
+        let mut operator = self.curr.kind;
+        let mut prec = Prec::of(&operator);
+
+        loop {
+            self.advance()?;
+            self.expr_precedence(prec.higher())?;
+
+            let comp_op = CompOp::from(operator);
+            let comp_expr = self.stack.pop().unwrap();
+            compares.push((comp_op, comp_expr));
+
+            operator = self.next.kind;
+            prec = Prec::of(&operator);
+            if prec == Prec::Compare {
+                self.advance()?;
+            } else {
+                break;
+            }
+        }
+
+        let expr = Expr::Compare(Box::new(init), compares);
+        self.stack.push(expr);
         Ok(())
     }
 
@@ -169,7 +199,7 @@ impl<'a> Parser<'a> {
             TKind::Lparen => self.expr_group(),
             TKind::Minus => self.expr_unary(),
             _ => Err(format!("expected an expression")),
-        }
+        };
     }
 
     fn dispatch_infix_op(&mut self) -> Result<(), String> {
@@ -180,8 +210,14 @@ impl<'a> Parser<'a> {
             TKind::Star => self.expr_binary(),
             TKind::Slash => self.expr_binary(),
             TKind::Percent => self.expr_binary(),
+            TKind::Lt => self.expr_compare(),
+            TKind::Gt => self.expr_compare(),
+            TKind::LtEq => self.expr_compare(),
+            TKind::GtEq => self.expr_compare(),
+            TKind::EqEq => self.expr_compare(),
+            TKind::NotEq => self.expr_compare(),
             _ => panic!(),
-        }
+        };
     }
 }
 
@@ -189,10 +225,11 @@ impl<'a> Parser<'a> {
 #[derive(PartialEq, PartialOrd)]
 enum Prec {
     None = 0,
-    Term,   // + -
-    Factor, // * / %
-    Unary,  // -
-    Power,  // ^
+    Compare, // < > <= >= == !=
+    Term,    // + -
+    Factor,  // * / %
+    Unary,   // -
+    Power,   // ^
     Primary,
 }
 
@@ -205,13 +242,20 @@ impl Prec {
             TKind::Star => Self::Factor,
             TKind::Slash => Self::Factor,
             TKind::Percent => Self::Factor,
+            TKind::Lt => Self::Compare,
+            TKind::Gt => Self::Compare,
+            TKind::LtEq => Self::Compare,
+            TKind::GtEq => Self::Compare,
+            TKind::EqEq => Self::Compare,
+            TKind::NotEq => Self::Compare,
             _ => Self::None,
         }
     }
 
     fn higher(&self) -> Self {
         match self {
-            Self::None => Self::Term,
+            Self::None => Self::Compare,
+            Self::Compare => Self::Term,
             Self::Term => Self::Factor,
             Self::Factor => Self::Unary,
             Self::Unary => Self::Power,

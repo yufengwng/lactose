@@ -4,6 +4,7 @@ program
     : expr ( ';' expr )* ';'?
 
 expr
+    : expr ( COMP_OP expr )+          # Compares
     : expr ( '+' | '-' ) expr         # Terms
     | expr ( '*' | '/' | '%' ) expr   # Factors
     | '-' expr                        # Negation
@@ -14,6 +15,8 @@ expr
 
 # Lexical Rules
 
+COMP_OP : '<' | '>' | '<=' | '>=' | '==' | '!='
+
 IDENT   : '_'
 NUM     : [0-9]+ ( '.' [0-9]+ )?
-SPACING : [ \t\v\f\r\n]+ -> ignored
+BLANKS  : [ \t\v\f\r\n]+ -> ignored

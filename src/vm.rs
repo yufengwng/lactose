@@ -1,4 +1,4 @@
-use crate::ast::Expr;
+use crate::ast::{CompOp, Expr};
 use crate::parse::Parser;
 use crate::value::Value;
 
@@ -102,6 +102,41 @@ impl Aqvm {
                     return Err(format!("divide-by-zero"));
                 }
                 Value::Num(lhs % rhs)
+            }
+            Expr::Compare(init, compares) => {
+                let mut curr = self.eval(*init)?;
+                let mut satisfy = true;
+                for (comp_op, comp_expr) in compares {
+                    let next = self.eval(comp_expr)?;
+                    let rhs = next.clone();
+                    match comp_op {
+                        CompOp::Lt | CompOp::Gt | CompOp::LtEq | CompOp::GtEq => {
+                            let (lhs, rhs) =
+                                check_nums!(curr, rhs, "inequality operands must be numeric");
+                            satisfy = comp_op.apply(lhs, rhs);
+                            if !satisfy {
+                                break;
+                            }
+                        }
+                        CompOp::EqEq | CompOp::NotEq => {
+                            let is_eq = match (curr.is_num(), rhs.is_num()) {
+                                (true, true) => curr.as_num() == rhs.as_num(),
+                                (false, false) => curr.as_bool() == rhs.as_bool(),
+                                _ => false,
+                            };
+                            satisfy = if comp_op == CompOp::EqEq {
+                                is_eq
+                            } else {
+                                !is_eq
+                            };
+                            if !satisfy {
+                                break;
+                            }
+                        }
+                    }
+                    curr = next;
+                }
+                Value::Bool(satisfy)
             }
         })
     }

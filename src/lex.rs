@@ -17,7 +17,7 @@ impl<'a> Lexer<'a> {
     }
 
     pub fn scan(&mut self) -> Token<'a> {
-        self.skip_spacing();
+        self.skip_blanks();
         if self.is_eof() {
             return Token::eof();
         }
@@ -33,6 +33,22 @@ impl<'a> Lexer<'a> {
             b'*' => TKind::Star,
             b'/' => TKind::Slash,
             b'%' => TKind::Percent,
+            b'<' => {
+                if self.matches(b'=') {
+                    TKind::LtEq
+                } else {
+                    TKind::Lt
+                }
+            }
+            b'>' => {
+                if self.matches(b'=') {
+                    TKind::GtEq
+                } else {
+                    TKind::Gt
+                }
+            }
+            b'=' if self.matches(b'=') => TKind::EqEq,
+            b'!' if self.matches(b'=') => TKind::NotEq,
             c if is_digit(c) => self.scan_num(),
             c if is_alpha(c) => self.scan_bool(),
             _ => TKind::Err,
@@ -101,6 +117,15 @@ impl<'a> Lexer<'a> {
         ch
     }
 
+    fn matches(&mut self, c: u8) -> bool {
+        if self.peek(0) == c {
+            self.advance();
+            true
+        } else {
+            false
+        }
+    }
+
     fn consume(&mut self) {
         self.curr += 1;
     }
@@ -109,7 +134,7 @@ impl<'a> Lexer<'a> {
         self.head = self.curr;
     }
 
-    fn skip_spacing(&mut self) {
+    fn skip_blanks(&mut self) {
         while !self.is_eof() && is_spacing(self.curr()) {
             self.consume();
         }
