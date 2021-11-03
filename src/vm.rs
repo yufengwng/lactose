@@ -1,4 +1,4 @@
-use crate::ast::{CompOp, Expr};
+use crate::ast::{RelOp, Expr};
 use crate::parse::Parser;
 use crate::value::Value;
 
@@ -103,28 +103,28 @@ impl Aqvm {
                 }
                 Value::Num(lhs % rhs)
             }
-            Expr::Compare(init, compares) => {
+            Expr::Relation(init, relations) => {
                 let mut curr = self.eval(*init)?;
                 let mut satisfy = true;
-                for (comp_op, comp_expr) in compares {
-                    let next = self.eval(comp_expr)?;
+                for (rel_op, rel_expr) in relations {
+                    let next = self.eval(rel_expr)?;
                     let rhs = next.clone();
-                    match comp_op {
-                        CompOp::Lt | CompOp::Gt | CompOp::LtEq | CompOp::GtEq => {
+                    match rel_op {
+                        RelOp::Lt | RelOp::Gt | RelOp::LtEq | RelOp::GtEq => {
                             let (lhs, rhs) =
                                 check_nums!(curr, rhs, "inequality operands must be numeric");
-                            satisfy = comp_op.apply(lhs, rhs);
+                            satisfy = rel_op.apply(lhs, rhs);
                             if !satisfy {
                                 break;
                             }
                         }
-                        CompOp::EqEq | CompOp::NotEq => {
+                        RelOp::EqEq | RelOp::NotEq => {
                             let is_eq = match (curr.is_num(), rhs.is_num()) {
                                 (true, true) => curr.as_num() == rhs.as_num(),
                                 (false, false) => curr.as_bool() == rhs.as_bool(),
                                 _ => false,
                             };
-                            satisfy = if comp_op == CompOp::EqEq {
+                            satisfy = if rel_op == RelOp::EqEq {
                                 is_eq
                             } else {
                                 !is_eq

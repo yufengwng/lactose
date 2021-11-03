@@ -44,7 +44,7 @@ impl<'a> Token<'a> {
 }
 
 #[derive(PartialEq)]
-pub enum CompOp {
+pub enum RelOp {
     Lt,
     Gt,
     LtEq,
@@ -53,27 +53,27 @@ pub enum CompOp {
     NotEq,
 }
 
-impl CompOp {
+impl RelOp {
     pub fn from(tkind: TKind) -> Self {
         match tkind {
-            TKind::Lt => CompOp::Lt,
-            TKind::Gt => CompOp::Gt,
-            TKind::LtEq => CompOp::LtEq,
-            TKind::GtEq => CompOp::GtEq,
-            TKind::EqEq => CompOp::EqEq,
-            TKind::NotEq => CompOp::NotEq,
+            TKind::Lt => RelOp::Lt,
+            TKind::Gt => RelOp::Gt,
+            TKind::LtEq => RelOp::LtEq,
+            TKind::GtEq => RelOp::GtEq,
+            TKind::EqEq => RelOp::EqEq,
+            TKind::NotEq => RelOp::NotEq,
             _ => panic!(),
         }
     }
 
     pub fn apply(&self, lhs: f64, rhs: f64) -> bool {
         match self {
-            CompOp::Lt => lhs < rhs,
-            CompOp::Gt => lhs > rhs,
-            CompOp::LtEq => lhs <= rhs,
-            CompOp::GtEq => lhs >= rhs,
-            CompOp::EqEq => lhs == rhs,
-            CompOp::NotEq => lhs != rhs,
+            RelOp::Lt => lhs < rhs,
+            RelOp::Gt => lhs > rhs,
+            RelOp::LtEq => lhs <= rhs,
+            RelOp::GtEq => lhs >= rhs,
+            RelOp::EqEq => lhs == rhs,
+            RelOp::NotEq => lhs != rhs,
         }
     }
 }
@@ -89,5 +89,5 @@ pub enum Expr {
     Mod(Box<Expr>, Box<Expr>),
     Add(Box<Expr>, Box<Expr>),
     Sub(Box<Expr>, Box<Expr>),
-    Compare(Box<Expr>, Vec<(CompOp, Expr)>),
+    Relation(Box<Expr>, Vec<(RelOp, Expr)>),
 }

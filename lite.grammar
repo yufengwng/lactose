@@ -4,7 +4,7 @@ program
     : expr ( ';' expr )* ';'?
 
 expr
-    : expr ( COMP_OP expr )+          # Compares
+    : expr ( REL_OP expr )+           # Relations
     : expr ( '+' | '-' ) expr         # Terms
     | expr ( '*' | '/' | '%' ) expr   # Factors
     | '-' expr                        # Negation
@@ -15,7 +15,7 @@ expr
 
 # Lexical Rules
 
-COMP_OP : '<' | '>' | '<=' | '>=' | '==' | '!='
+REL_OP  : '<' | '>' | '<=' | '>=' | '==' | '!='
 
 IDENT   : '_'
 NUM     : [0-9]+ ( '.' [0-9]+ )?
