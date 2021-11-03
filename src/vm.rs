@@ -1,4 +1,5 @@
-use crate::ast::{RelOp, Expr};
+use crate::ast::Expr;
+use crate::ast::RelOp;
 use crate::parse::Parser;
 use crate::value::Value;
 
@@ -9,7 +10,7 @@ pub struct Aqvm {
 impl Aqvm {
     pub fn new() -> Self {
         Self {
-            underscore: Value::Num(0.0),
+            underscore: Value::Unit,
         }
     }
 
@@ -124,11 +125,7 @@ impl Aqvm {
                                 (false, false) => curr.as_bool() == rhs.as_bool(),
                                 _ => false,
                             };
-                            satisfy = if rel_op == RelOp::EqEq {
-                                is_eq
-                            } else {
-                                !is_eq
-                            };
+                            satisfy = if rel_op == RelOp::EqEq { is_eq } else { !is_eq };
                             if !satisfy {
                                 break;
                             }
