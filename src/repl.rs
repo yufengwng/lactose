@@ -21,16 +21,19 @@ pub fn start() -> io::Result<()> {
             }
 
             let input = buffer.trim();
-            if !input.ends_with('\\') {
-                let line = input.to_owned();
+            if input.ends_with(";;") {
+                let line = input[..input.len()-2].to_owned();
                 lines.push(line);
                 break;
             }
 
-            let line = input[..input.len()-1].to_owned();
+            let line = input.to_owned();
+            if line.is_empty() && lines.is_empty() {
+                break;
+            }
             lines.push(line);
 
-            print!("··· "); // middot
+            print!("  · "); // middot
             io::stdout().flush()?;
         }
 
