@@ -1,79 +1,73 @@
-#[derive(Copy, Clone, PartialEq)]
-pub enum TKind {
-    EOF,
-    Err,
-    Num,
-    True,
-    False,
-    Ident,
-    Semi,
-    Lparen,
-    Rparen,
-    Caret,
-    Plus,
-    Minus,
-    Star,
-    Slash,
-    Percent,
-    Lt,
-    Gt,
-    LtEq,
-    GtEq,
-    EqEq,
-    NotEq,
+use crate::token::TKind;
+use crate::token::TKind::*;
+
+pub enum Item {
+    // Mod,
+    // Use,
+    // Def,
+    // Impl,
+    // Alias,
+    // Trait,
+    //Fn(FnDef),
+    // Const,
+    //Let(LetBind),
+    Expr(Expr),
 }
 
-#[derive(Clone)]
-pub struct Token<'a> {
-    pub kind: TKind,
-    span: &'a [u8],
+pub struct Ast {
+    pub nodes: Vec<Item>,
 }
 
-impl<'a> Token<'a> {
-    pub fn eof() -> Self {
-        Self::new(TKind::EOF, &[])
+impl Ast {
+    pub fn new() -> Self {
+        Self { nodes: Vec::new() }
     }
+}
 
-    pub fn new(kind: TKind, span: &'a [u8]) -> Self {
-        Self { kind, span }
-    }
+struct TyHint {
+    name: String,
+    args: Vec<TyHint>,
+    // dims: Vec<usize>,
+}
 
-    pub fn lexeme(&self) -> &'a str {
-        std::str::from_utf8(self.span).unwrap()
-    }
+struct FnDef {
+    name: String,
+    params: Vec<FnParam>,
+    body: Vec<Item>,
+    ret: Option<TyHint>,
+}
+
+struct FnParam {
+    name: String,
+    ty: Option<TyHint>,
+}
+
+struct LetBind {
+    name: String,
+    init: Expr,
+    ty: Option<TyHint>,
 }
 
 #[derive(PartialEq)]
 pub enum RelOp {
     Lt,
     Gt,
-    LtEq,
-    GtEq,
-    EqEq,
-    NotEq,
+    Le,
+    Ge,
+    Eq,
+    Ne,
 }
 
 impl RelOp {
     pub fn from(tkind: TKind) -> Self {
         match tkind {
-            TKind::Lt => RelOp::Lt,
-            TKind::Gt => RelOp::Gt,
-            TKind::LtEq => RelOp::LtEq,
-            TKind::GtEq => RelOp::GtEq,
-            TKind::EqEq => RelOp::EqEq,
-            TKind::NotEq => RelOp::NotEq,
+            TkLt => RelOp::Lt,
+            TkGt => RelOp::Gt,
+            TkLtEq => RelOp::Le,
+            TkGtEq => RelOp::Ge,
+            TkEqEq => RelOp::Eq,
+            TkNotEq => RelOp::Ne,
             _ => panic!(),
-        }
-    }
-
-    pub fn apply(&self, lhs: f64, rhs: f64) -> bool {
-        match self {
-            RelOp::Lt => lhs < rhs,
-            RelOp::Gt => lhs > rhs,
-            RelOp::LtEq => lhs <= rhs,
-            RelOp::GtEq => lhs >= rhs,
-            RelOp::EqEq => lhs == rhs,
-            RelOp::NotEq => lhs != rhs,
         }
     }
 }

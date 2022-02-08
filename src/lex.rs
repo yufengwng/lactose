@@ -1,5 +1,6 @@
-use crate::ast::TKind;
-use crate::ast::Token;
+use crate::token::Token;
+use crate::token::TKind;
+use crate::token::TKind::*;
 
 pub struct Lexer<'a> {
     src: &'a [u8],
@@ -23,35 +24,35 @@ impl<'a> Lexer<'a> {
         }
 
         let kind = match self.advance() {
-            b'_' => TKind::Ident,
-            b';' => TKind::Semi,
-            b'(' => TKind::Lparen,
-            b')' => TKind::Rparen,
-            b'^' => TKind::Caret,
-            b'+' => TKind::Plus,
-            b'-' => TKind::Minus,
-            b'*' => TKind::Star,
-            b'/' => TKind::Slash,
-            b'%' => TKind::Percent,
+            b'_' => TkIdent,
+            b';' => TkSemi,
+            b'(' => TkLparen,
+            b')' => TkRparen,
+            b'^' => TkCaret,
+            b'+' => TkPlus,
+            b'-' => TkMinus,
+            b'*' => TkStar,
+            b'/' => TkSlash,
+            b'%' => TkPercent,
             b'<' => {
                 if self.matches(b'=') {
-                    TKind::LtEq
+                    TkLtEq
                 } else {
-                    TKind::Lt
+                    TkLt
                 }
             }
             b'>' => {
                 if self.matches(b'=') {
-                    TKind::GtEq
+                    TkGtEq
                 } else {
-                    TKind::Gt
+                    TkGt
                 }
             }
-            b'=' if self.matches(b'=') => TKind::EqEq,
-            b'!' if self.matches(b'=') => TKind::NotEq,
+            b'=' if self.matches(b'=') => TkEqEq,
+            b'!' if self.matches(b'=') => TkNotEq,
             c if is_digit(c) => self.scan_num(),
             c if is_alpha(c) => self.scan_bool(),
-            _ => TKind::Err,
+            _ => TkErr,
         };
 
         let token = Token::new(kind, self.bytes());
@@ -70,25 +71,25 @@ impl<'a> Lexer<'a> {
                 self.consume();
             }
         }
-        TKind::Num
+        TkReal
     }
 
     fn scan_bool(&mut self) -> TKind {
         self.curr = self.head + 4;
         let t_str = "true".as_bytes();
         if self.curr <= self.src.len() && self.bytes() == t_str {
-            return TKind::True;
+            return TkTrue;
         }
 
         self.curr = self.head + 5;
         let f_str = "false".as_bytes();
         if self.curr <= self.src.len() && self.bytes() == f_str {
-            return TKind::False;
+            return TkFalse;
         }
 
         // Restore current char pointer and signal error.
         self.curr = self.head + 1;
-        TKind::Err
+        TkErr
     }
 
     fn is_eof(&self) -> bool {

@@ -1,4 +1,5 @@
 use crate::ast::Expr;
+use crate::ast::Item;
 use crate::ast::RelOp;
 use crate::parse::Parser;
 use crate::value::Value;
@@ -17,7 +18,7 @@ impl Aqvm {
     pub fn run(&mut self, source: &str) {
         let parser = Parser::new(source);
 
-        let list = match parser.ast() {
+        let ast = match parser.ast() {
             Ok(ls) => ls,
             Err(msg) => {
                 eprintln!("[E] {}", msg);
@@ -25,14 +26,20 @@ impl Aqvm {
             }
         };
 
-        for expr in list {
-            self.underscore = match self.eval(expr) {
-                Ok(value) => value,
-                Err(msg) => {
-                    eprintln!("[E] {}", msg);
-                    return;
+        for item in ast.nodes {
+            match item {
+                // Item::Fn(_) => unimplemented!(),
+                // Item::Let(_) => unimplemented!(),
+                Item::Expr(expr) => {
+                    self.underscore = match self.eval(expr) {
+                        Ok(value) => value,
+                        Err(msg) => {
+                            eprintln!("[E] {}", msg);
+                            return;
+                        }
+                    };
                 }
-            };
+            }
         }
 
         println!("{}", self.underscore);
@@ -111,21 +118,21 @@ impl Aqvm {
                     let next = self.eval(rel_expr)?;
                     let rhs = next.clone();
                     match rel_op {
-                        RelOp::Lt | RelOp::Gt | RelOp::LtEq | RelOp::GtEq => {
+                        RelOp::Lt | RelOp::Gt | RelOp::Le | RelOp::Ge => {
                             let (lhs, rhs) =
                                 check_nums!(curr, rhs, "inequality operands must be numeric");
-                            satisfy = rel_op.apply(lhs, rhs);
+                            satisfy = apply(rel_op, lhs, rhs);
                             if !satisfy {
                                 break;
                             }
                         }
-                        RelOp::EqEq | RelOp::NotEq => {
+                        RelOp::Eq | RelOp::Ne => {
                             let is_eq = match (curr.is_num(), rhs.is_num()) {
                                 (true, true) => curr.as_num() == rhs.as_num(),
                                 (false, false) => curr.as_bool() == rhs.as_bool(),
                                 _ => false,
                             };
-                            satisfy = if rel_op == RelOp::EqEq { is_eq } else { !is_eq };
+                            satisfy = if rel_op == RelOp::Eq { is_eq } else { !is_eq };
                             if !satisfy {
                                 break;
                             }
@@ -136,5 +143,16 @@ impl Aqvm {
                 Value::Bool(satisfy)
             }
         })
+    }
+}
+
+fn apply(op: RelOp, lhs: f64, rhs: f64) -> bool {
+    match op {
+        RelOp::Lt => lhs < rhs,
+        RelOp::Gt => lhs > rhs,
+        RelOp::Le => lhs <= rhs,
+        RelOp::Ge => lhs >= rhs,
+        RelOp::Eq => lhs == rhs,
+        RelOp::Ne => lhs != rhs,
     }
 }

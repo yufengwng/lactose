@@ -1,8 +1,11 @@
+use crate::ast::Ast;
 use crate::ast::Expr;
+use crate::ast::Item;
 use crate::ast::RelOp;
-use crate::ast::TKind;
-use crate::ast::Token;
 use crate::lex::Lexer;
+use crate::token::TKind;
+use crate::token::TKind::*;
+use crate::token::Token;
 
 pub struct Parser<'a> {
     stack: Vec<Expr>,
@@ -21,18 +24,18 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn ast(mut self) -> Result<Vec<Expr>, String> {
+    pub fn ast(mut self) -> Result<Ast, String> {
         self.curr = self.next.clone();
         self.next = self.lexer.scan();
         self.advance()?;
 
         self.expression()?;
-        while self.next.kind != TKind::EOF {
-            if self.next.kind == TKind::Err {
+        while self.next.kind != TkEof {
+            if self.next.kind == TkErr {
                 return Err(format!("unrecognized character '{}'", self.next.lexeme()));
             }
-            self.consume_next(TKind::Semi, "expected ';' after expression")?;
-            if self.next.kind != TKind::EOF {
+            self.consume_next(TkSemi, "expected ';' after expression")?;
+            if self.next.kind != TkEof {
                 self.advance()?;
                 self.expression()?;
             } else {
@@ -40,15 +43,20 @@ impl<'a> Parser<'a> {
             }
         }
 
-        Ok(self.stack)
+        let mut root = Ast::new();
+        for expr in self.stack {
+            root.nodes.push(Item::Expr(expr));
+        }
+
+        Ok(root)
     }
 
     fn advance(&mut self) -> Result<(), String> {
         self.curr = self.next.clone();
         self.next = self.lexer.scan();
         match self.curr.kind {
-            TKind::EOF => Err(format!("reached end-of-file")),
-            TKind::Err => Err(format!("unrecognized character '{}'", self.curr.lexeme())),
+            TkEof => Err(format!("reached end-of-file")),
+            TkErr => Err(format!("unrecognized character '{}'", self.curr.lexeme())),
             _ => Ok(()),
         }
     }
@@ -113,11 +121,11 @@ impl<'a> Parser<'a> {
         let lhs = self.stack.pop().unwrap();
 
         let expr = match operator {
-            TKind::Plus => Expr::Add(Box::new(lhs), Box::new(rhs)),
-            TKind::Minus => Expr::Sub(Box::new(lhs), Box::new(rhs)),
-            TKind::Star => Expr::Mul(Box::new(lhs), Box::new(rhs)),
-            TKind::Slash => Expr::Div(Box::new(lhs), Box::new(rhs)),
-            TKind::Percent => Expr::Mod(Box::new(lhs), Box::new(rhs)),
+            TkPlus => Expr::Add(Box::new(lhs), Box::new(rhs)),
+            TkMinus => Expr::Sub(Box::new(lhs), Box::new(rhs)),
+            TkStar => Expr::Mul(Box::new(lhs), Box::new(rhs)),
+            TkSlash => Expr::Div(Box::new(lhs), Box::new(rhs)),
+            TkPercent => Expr::Mod(Box::new(lhs), Box::new(rhs)),
             _ => unreachable!(),
         };
 
@@ -133,7 +141,7 @@ impl<'a> Parser<'a> {
 
         let expr = self.stack.pop().unwrap();
         let expr = match operator {
-            TKind::Minus => Expr::Negate(Box::new(expr)),
+            TkMinus => Expr::Negate(Box::new(expr)),
             _ => unreachable!(),
         };
 
@@ -151,7 +159,7 @@ impl<'a> Parser<'a> {
         let lhs = self.stack.pop().unwrap();
 
         let expr = match operator {
-            TKind::Caret => Expr::Power(Box::new(lhs), Box::new(rhs)),
+            TkCaret => Expr::Power(Box::new(lhs), Box::new(rhs)),
             _ => unreachable!(),
         };
 
@@ -162,14 +170,14 @@ impl<'a> Parser<'a> {
     fn expr_group(&mut self) -> Result<(), String> {
         self.advance()?;
         self.expression()?;
-        self.consume_next(TKind::Rparen, "expected ')' after expression")?;
+        self.consume_next(TkRparen, "expected ')' after expression")?;
         Ok(())
     }
 
     fn expr_literal(&mut self) -> Result<(), String> {
         let expr = match self.curr.kind {
-            TKind::True => Expr::Bool(true),
-            TKind::False => Expr::Bool(false),
+            TkTrue => Expr::Bool(true),
+            TkFalse => Expr::Bool(false),
             _ => unreachable!(),
         };
         self.stack.push(expr);
@@ -192,30 +200,30 @@ impl<'a> Parser<'a> {
 
     fn dispatch_prefix_op(&mut self) -> Result<(), String> {
         return match self.curr.kind {
-            TKind::Num => self.expr_num(),
-            TKind::True => self.expr_literal(),
-            TKind::False => self.expr_literal(),
-            TKind::Ident => self.expr_ident(),
-            TKind::Lparen => self.expr_group(),
-            TKind::Minus => self.expr_unary(),
+            TkReal => self.expr_num(),
+            TkTrue => self.expr_literal(),
+            TkFalse => self.expr_literal(),
+            TkIdent => self.expr_ident(),
+            TkLparen => self.expr_group(),
+            TkMinus => self.expr_unary(),
             _ => Err(format!("expected an expression")),
         };
     }
 
     fn dispatch_infix_op(&mut self) -> Result<(), String> {
         return match self.curr.kind {
-            TKind::Caret => self.expr_power(),
-            TKind::Plus => self.expr_binary(),
-            TKind::Minus => self.expr_binary(),
-            TKind::Star => self.expr_binary(),
-            TKind::Slash => self.expr_binary(),
-            TKind::Percent => self.expr_binary(),
-            TKind::Lt => self.expr_relation(),
-            TKind::Gt => self.expr_relation(),
-            TKind::LtEq => self.expr_relation(),
-            TKind::GtEq => self.expr_relation(),
-            TKind::EqEq => self.expr_relation(),
-            TKind::NotEq => self.expr_relation(),
+            TkCaret => self.expr_power(),
+            TkPlus => self.expr_binary(),
+            TkMinus => self.expr_binary(),
+            TkStar => self.expr_binary(),
+            TkSlash => self.expr_binary(),
+            TkPercent => self.expr_binary(),
+            TkLt => self.expr_relation(),
+            TkGt => self.expr_relation(),
+            TkLtEq => self.expr_relation(),
+            TkGtEq => self.expr_relation(),
+            TkEqEq => self.expr_relation(),
+            TkNotEq => self.expr_relation(),
             _ => panic!(),
         };
     }
@@ -236,18 +244,18 @@ enum Prec {
 impl Prec {
     fn of(tkind: &TKind) -> Self {
         match tkind {
-            TKind::Caret => Self::Power,
-            TKind::Plus => Self::Term,
-            TKind::Minus => Self::Term,
-            TKind::Star => Self::Factor,
-            TKind::Slash => Self::Factor,
-            TKind::Percent => Self::Factor,
-            TKind::Lt => Self::Relation,
-            TKind::Gt => Self::Relation,
-            TKind::LtEq => Self::Relation,
-            TKind::GtEq => Self::Relation,
-            TKind::EqEq => Self::Relation,
-            TKind::NotEq => Self::Relation,
+            TkCaret => Self::Power,
+            TkPlus => Self::Term,
+            TkMinus => Self::Term,
+            TkStar => Self::Factor,
+            TkSlash => Self::Factor,
+            TkPercent => Self::Factor,
+            TkLt => Self::Relation,
+            TkGt => Self::Relation,
+            TkLtEq => Self::Relation,
+            TkGtEq => Self::Relation,
+            TkEqEq => Self::Relation,
+            TkNotEq => Self::Relation,
             _ => Self::None,
         }
     }
