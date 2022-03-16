@@ -1,4 +1,4 @@
-# Syntactical Rules
+# Syntactic Rules
 
 program
     : expr ( ';' expr )* ';'?

@@ -1,7 +1,7 @@
 use std::io;
 use std::io::Write;
 
-use lite::vm::Aqvm;
+use lt::vm::Aqvm;
 
 pub fn start() -> io::Result<()> {
     let mut vm = Aqvm::new();

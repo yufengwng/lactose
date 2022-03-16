@@ -1,7 +1,7 @@
 mod repl;
 
 fn main() {
-    println!("[lite-lang]");
+    println!("[lactose-lang]");
     match repl::start() {
         Ok(_) => (),
         Err(e) => eprintln!("[E] {}", e),

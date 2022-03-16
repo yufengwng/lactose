@@ -102,7 +102,7 @@ impl Aqvm {
                 }
                 Value::Num(lhs / rhs)
             }
-            Expr::Mod(lhs, rhs) => {
+            Expr::Rem(lhs, rhs) => {
                 let lhs = self.eval(*lhs)?;
                 let rhs = self.eval(*rhs)?;
                 let (lhs, rhs) = check_nums!(lhs, rhs, "modulo operands must be numeric");

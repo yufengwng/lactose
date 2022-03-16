@@ -80,7 +80,7 @@ pub enum Expr {
     Negate(Box<Expr>),
     Mul(Box<Expr>, Box<Expr>),
     Div(Box<Expr>, Box<Expr>),
-    Mod(Box<Expr>, Box<Expr>),
+    Rem(Box<Expr>, Box<Expr>),
     Add(Box<Expr>, Box<Expr>),
     Sub(Box<Expr>, Box<Expr>),
     Relation(Box<Expr>, Vec<(RelOp, Expr)>),

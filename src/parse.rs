@@ -125,7 +125,7 @@ impl<'a> Parser<'a> {
             TkMinus => Expr::Sub(Box::new(lhs), Box::new(rhs)),
             TkStar => Expr::Mul(Box::new(lhs), Box::new(rhs)),
             TkSlash => Expr::Div(Box::new(lhs), Box::new(rhs)),
-            TkPercent => Expr::Mod(Box::new(lhs), Box::new(rhs)),
+            TkPercent => Expr::Rem(Box::new(lhs), Box::new(rhs)),
             _ => unreachable!(),
         };
 
