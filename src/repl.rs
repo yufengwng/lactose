@@ -1,10 +1,13 @@
 use std::io;
 use std::io::Write;
 
-use lt::vm::Aqvm;
+use lt::vm::MitoEnv;
+use lt::vm::MitoRes;
+use lt::vm::MitoVM;
 
 pub fn start() -> io::Result<()> {
-    let mut vm = Aqvm::new();
+    let mut vm = MitoVM::new();
+    let mut env = MitoEnv::new();
     let mut buffer = String::new();
     loop {
         print!("lt> ");
@@ -22,7 +25,7 @@ pub fn start() -> io::Result<()> {
 
             let input = buffer.trim();
             if input.ends_with(";;") {
-                let line = input[..input.len()-2].to_owned();
+                let line = input[..input.len() - 2].to_owned();
                 lines.push(line);
                 break;
             }
@@ -42,6 +45,13 @@ pub fn start() -> io::Result<()> {
             continue;
         }
 
-        vm.run(&source);
+        match vm.run(&mut env, &source) {
+            MitoRes::Ok(val) => {
+                println!("{}", val);
+                env.set("_", val);
+            }
+            MitoRes::CompileErr(msg) => eprintln!("[E] {}", msg),
+            MitoRes::RuntimeErr(msg) => eprintln!("[E] {}", msg),
+        }
     }
 }

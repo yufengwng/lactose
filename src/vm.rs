@@ -1,158 +1,189 @@
-use crate::ast::Expr;
-use crate::ast::Item;
-use crate::ast::RelOp;
+use std::collections::HashMap;
+
+use crate::cgen::CodeGen;
+use crate::code::Chunk;
+use crate::code::OpCode;
+use crate::code::OpCode::*;
 use crate::parse::Parser;
 use crate::value::Value;
 
-pub struct Aqvm {
-    underscore: Value,
+pub enum MitoRes {
+    Ok(Value),
+    CompileErr(String),
+    RuntimeErr(String),
 }
 
-impl Aqvm {
+pub struct MitoEnv {
+    vals: HashMap<String, Value>,
+}
+
+impl MitoEnv {
     pub fn new() -> Self {
         Self {
-            underscore: Value::Unit,
+            vals: HashMap::new(),
         }
     }
 
-    pub fn run(&mut self, source: &str) {
-        let parser = Parser::new(source);
-
-        let ast = match parser.ast() {
-            Ok(ls) => ls,
-            Err(msg) => {
-                eprintln!("[E] {}", msg);
-                return;
-            }
-        };
-
-        for item in ast.nodes {
-            match item {
-                // Item::Fn(_) => unimplemented!(),
-                // Item::Let(_) => unimplemented!(),
-                Item::Expr(expr) => {
-                    self.underscore = match self.eval(expr) {
-                        Ok(value) => value,
-                        Err(msg) => {
-                            eprintln!("[E] {}", msg);
-                            return;
-                        }
-                    };
-                }
-            }
-        }
-
-        println!("{}", self.underscore);
+    pub fn set(&mut self, name: &str, value: Value) {
+        self.vals.insert(name.to_owned(), value);
     }
 
-    fn eval(&self, expr: Expr) -> Result<Value, String> {
-        macro_rules! check_nums {
-            ($val:ident, $msg:literal) => {{
-                if !$val.is_num() {
-                    return Err(format!($msg));
-                }
-                $val.as_num()
-            }};
-            ($lhs:ident, $rhs:ident, $msg:literal) => {{
-                if !$lhs.is_num() || !$rhs.is_num() {
-                    return Err(format!($msg));
-                }
-                ($lhs.as_num(), $rhs.as_num())
-            }};
-        }
-        Ok(match expr {
-            Expr::Num(n) => Value::Num(n),
-            Expr::Bool(b) => Value::Bool(b),
-            Expr::Ident => self.underscore.clone(),
-            Expr::Power(base, power) => {
-                let base = self.eval(*base)?;
-                let power = self.eval(*power)?;
-                let (base, power) = check_nums!(base, power, "base and power must be numeric");
-                Value::Num(base.powf(power))
-            }
-            Expr::Negate(num) => {
-                let num = self.eval(*num)?;
-                let num = check_nums!(num, "negation operand must be numeric");
-                Value::Num(-num)
-            }
-            Expr::Add(lhs, rhs) => {
-                let lhs = self.eval(*lhs)?;
-                let rhs = self.eval(*rhs)?;
-                let (lhs, rhs) = check_nums!(lhs, rhs, "addition operands must be numeric");
-                Value::Num(lhs + rhs)
-            }
-            Expr::Sub(lhs, rhs) => {
-                let lhs = self.eval(*lhs)?;
-                let rhs = self.eval(*rhs)?;
-                let (lhs, rhs) = check_nums!(lhs, rhs, "subtraction operands must be numeric");
-                Value::Num(lhs - rhs)
-            }
-            Expr::Mul(lhs, rhs) => {
-                let lhs = self.eval(*lhs)?;
-                let rhs = self.eval(*rhs)?;
-                let (lhs, rhs) = check_nums!(lhs, rhs, "multiply operands must be numeric");
-                Value::Num(lhs * rhs)
-            }
-            Expr::Div(lhs, rhs) => {
-                let lhs = self.eval(*lhs)?;
-                let rhs = self.eval(*rhs)?;
-                let (lhs, rhs) = check_nums!(lhs, rhs, "division operands must be numeric");
-                if rhs == 0.0 {
-                    return Err(format!("divide-by-zero"));
-                }
-                Value::Num(lhs / rhs)
-            }
-            Expr::Rem(lhs, rhs) => {
-                let lhs = self.eval(*lhs)?;
-                let rhs = self.eval(*rhs)?;
-                let (lhs, rhs) = check_nums!(lhs, rhs, "modulo operands must be numeric");
-                if rhs == 0.0 {
-                    return Err(format!("divide-by-zero"));
-                }
-                Value::Num(lhs % rhs)
-            }
-            Expr::Relation(init, relations) => {
-                let mut curr = self.eval(*init)?;
-                let mut satisfy = true;
-                for (rel_op, rel_expr) in relations {
-                    let next = self.eval(rel_expr)?;
-                    let rhs = next.clone();
-                    match rel_op {
-                        RelOp::Lt | RelOp::Gt | RelOp::Le | RelOp::Ge => {
-                            let (lhs, rhs) =
-                                check_nums!(curr, rhs, "inequality operands must be numeric");
-                            satisfy = apply(rel_op, lhs, rhs);
-                            if !satisfy {
-                                break;
-                            }
-                        }
-                        RelOp::Eq | RelOp::Ne => {
-                            let is_eq = match (curr.is_num(), rhs.is_num()) {
-                                (true, true) => curr.as_num() == rhs.as_num(),
-                                (false, false) => curr.as_bool() == rhs.as_bool(),
-                                _ => false,
-                            };
-                            satisfy = if rel_op == RelOp::Eq { is_eq } else { !is_eq };
-                            if !satisfy {
-                                break;
-                            }
-                        }
-                    }
-                    curr = next;
-                }
-                Value::Bool(satisfy)
-            }
-        })
+    pub fn get(&self, name: &str) -> Option<Value> {
+        return self.vals.get(name).map(|val| val.clone());
     }
 }
 
-fn apply(op: RelOp, lhs: f64, rhs: f64) -> bool {
-    match op {
-        RelOp::Lt => lhs < rhs,
-        RelOp::Gt => lhs > rhs,
-        RelOp::Le => lhs <= rhs,
-        RelOp::Ge => lhs >= rhs,
-        RelOp::Eq => lhs == rhs,
-        RelOp::Ne => lhs != rhs,
+pub struct MitoVM {
+    stack: Vec<Value>,
+    ip: usize,
+}
+
+impl MitoVM {
+    pub fn new() -> Self {
+        Self {
+            stack: Vec::new(),
+            ip: 0,
+        }
+    }
+
+    pub fn run(&mut self, env: &mut MitoEnv, source: &str) -> MitoRes {
+        let ast = match Parser::new(source).ast() {
+            Ok(ls) => ls,
+            Err(msg) => return MitoRes::CompileErr(msg),
+        };
+        let chunk = match CodeGen::new().gen(&ast) {
+            Ok(ch) => ch,
+            Err(msg) => return MitoRes::CompileErr(msg),
+        };
+        self.execute(env, &chunk)
+    }
+
+    fn execute(&mut self, env: &mut MitoEnv, chunk: &Chunk) -> MitoRes {
+        self.ip = 0;
+        while self.ip < chunk.len() {
+            let byte = chunk.code(self.ip);
+            self.ip += 1;
+            let opcode = byte.try_into().unwrap();
+            self.dispatch(env, chunk, opcode);
+        }
+        let res = if !self.stack.is_empty() {
+            self.stack.pop().unwrap()
+        } else {
+            Value::Unit
+        };
+        MitoRes::Ok(res)
+    }
+
+    #[inline]
+    fn dispatch(&mut self, env: &mut MitoEnv, chunk: &Chunk, opcode: OpCode) {
+        match opcode {
+            OpNop => return,
+            OpUnit => self.stack.push(Value::Unit),
+            OpTrue => self.stack.push(Value::Bool(true)),
+            OpFalse => self.stack.push(Value::Bool(false)),
+            OpConst => {
+                let idx = chunk.code(self.ip) as usize;
+                self.ip += 1;
+                let val = chunk.value(idx);
+                self.stack.push(val);
+            }
+            OpAdd => {
+                let rhs = self.stack.pop().unwrap().as_num();
+                let lhs = self.stack.pop().unwrap().as_num();
+                let val = lhs + rhs;
+                self.stack.push(Value::Num(val));
+            }
+            OpSub => {
+                let rhs = self.stack.pop().unwrap().as_num();
+                let lhs = self.stack.pop().unwrap().as_num();
+                let val = lhs - rhs;
+                self.stack.push(Value::Num(val));
+            }
+            OpMul => {
+                let rhs = self.stack.pop().unwrap().as_num();
+                let lhs = self.stack.pop().unwrap().as_num();
+                let val = lhs * rhs;
+                self.stack.push(Value::Num(val));
+            }
+            OpDiv => {
+                let rhs = self.stack.pop().unwrap().as_num();
+                let lhs = self.stack.pop().unwrap().as_num();
+                let val = lhs / rhs;
+                self.stack.push(Value::Num(val));
+            }
+            OpRem => {
+                let rhs = self.stack.pop().unwrap().as_num();
+                let lhs = self.stack.pop().unwrap().as_num();
+                let val = lhs % rhs;
+                self.stack.push(Value::Num(val));
+            }
+            OpPow => {
+                let rhs = self.stack.pop().unwrap().as_num();
+                let lhs = self.stack.pop().unwrap().as_num();
+                let val = lhs.powf(rhs);
+                self.stack.push(Value::Num(val));
+            }
+            OpNeg => {
+                let val = self.stack.pop().unwrap().as_num();
+                self.stack.push(Value::Num(-val));
+            }
+            OpLt => {
+                let rhs = self.stack.pop().unwrap().as_num();
+                let lhs = self.stack.pop().unwrap().as_num();
+                let val = lhs < rhs;
+                self.stack.push(Value::Bool(val));
+            }
+            OpGt => {
+                let rhs = self.stack.pop().unwrap().as_num();
+                let lhs = self.stack.pop().unwrap().as_num();
+                let val = lhs > rhs;
+                self.stack.push(Value::Bool(val));
+            }
+            OpLtEq => {
+                let rhs = self.stack.pop().unwrap().as_num();
+                let lhs = self.stack.pop().unwrap().as_num();
+                let val = lhs <= rhs;
+                self.stack.push(Value::Bool(val));
+            }
+            OpGtEq => {
+                let rhs = self.stack.pop().unwrap().as_num();
+                let lhs = self.stack.pop().unwrap().as_num();
+                let val = lhs >= rhs;
+                self.stack.push(Value::Bool(val));
+            }
+            OpEqual => {
+                let rhs = self.stack.pop().unwrap();
+                let lhs = self.stack.pop().unwrap();
+                let is_eq = match (lhs.is_num(), rhs.is_num()) {
+                    (true, true) => lhs.as_num() == rhs.as_num(),
+                    (false, false) => lhs.as_bool() == rhs.as_bool(),
+                    _ => false,
+                };
+                self.stack.push(Value::Bool(is_eq));
+            }
+            OpNotEq => {
+                let rhs = self.stack.pop().unwrap();
+                let lhs = self.stack.pop().unwrap();
+                let is_eq = match (lhs.is_num(), rhs.is_num()) {
+                    (true, true) => lhs.as_num() == rhs.as_num(),
+                    (false, false) => lhs.as_bool() == rhs.as_bool(),
+                    _ => false,
+                };
+                self.stack.push(Value::Bool(!is_eq));
+            }
+            OpLoop => todo!(),
+            OpJump => todo!(),
+            OpBranch => todo!(),
+            OpGet => {
+                let idx = chunk.code(self.ip) as usize;
+                self.ip += 1;
+                let name = chunk.value(idx).as_str();
+                let val = env.get(&name).unwrap();
+                self.stack.push(val);
+            }
+            OpPop => {
+                self.stack.pop();
+            }
+        }
     }
 }
