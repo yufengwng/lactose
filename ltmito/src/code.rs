@@ -3,7 +3,7 @@ use std::mem;
 use crate::value::Value;
 
 #[repr(u8)]
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum OpCode {
     OpNop,
     OpUnit,
@@ -30,13 +30,14 @@ pub enum OpCode {
     OpPop,
 }
 
+const OPCODE_MAX: u8 = OpCode::OpPop as u8;
+
 impl TryFrom<u8> for OpCode {
-    type Error = ();
+    type Error = String;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
-        let max = Self::OpPop as u8;
-        if value > max {
-            return Err(());
+        if value > OPCODE_MAX {
+            return Err(format!("byte value is outside opcode range"));
         } else {
             return Ok(unsafe { mem::transmute(value) });
         }

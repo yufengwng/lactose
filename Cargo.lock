@@ -5,3 +5,24 @@ version = 3
 [[package]]
 name = "lt"
 version = "0.1.0"
+dependencies = [
+ "ltrepl",
+]
+
+[[package]]
+name = "ltlang"
+version = "0.1.0"
+
+[[package]]
+name = "ltmito"
+version = "0.1.0"
+dependencies = [
+ "ltlang",
+]
+
+[[package]]
+name = "ltrepl"
+version = "0.1.0"
+dependencies = [
+ "ltmito",
+]

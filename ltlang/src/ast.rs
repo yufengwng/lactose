@@ -24,29 +24,23 @@ impl Ast {
     }
 }
 
-struct TyHint {
-    name: String,
-    args: Vec<TyHint>,
-    // dims: Vec<usize>,
-}
-
-struct FnDef {
-    name: String,
-    params: Vec<FnParam>,
-    body: Vec<Item>,
-    ret: Option<TyHint>,
-}
-
-struct FnParam {
-    name: String,
-    ty: Option<TyHint>,
-}
-
-struct LetBind {
-    name: String,
-    init: Expr,
-    ty: Option<TyHint>,
-}
+// struct FnDef {
+//     name: String,
+//     params: Vec<FnParam>,
+//     body: Vec<Item>,
+//     ret: Option<TyHint>,
+// }
+//
+// struct FnParam {
+//     name: String,
+//     ty: Option<TyHint>,
+// }
+//
+// struct LetBind {
+//     name: String,
+//     init: Expr,
+//     ty: Option<TyHint>,
+// }
 
 #[derive(PartialEq)]
 pub enum RelOp {

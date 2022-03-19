@@ -1,4 +1,4 @@
-mod repl;
+use ltrepl::repl;
 
 fn main() {
     println!("[lactose-lang]");

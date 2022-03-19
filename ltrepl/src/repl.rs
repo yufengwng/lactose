@@ -1,9 +1,9 @@
 use std::io;
 use std::io::Write;
 
-use lt::vm::MitoEnv;
-use lt::vm::MitoRes;
-use lt::vm::MitoVM;
+use ltmito::vm::MitoEnv;
+use ltmito::vm::MitoRes;
+use ltmito::vm::MitoVM;
 
 pub fn start() -> io::Result<()> {
     let mut vm = MitoVM::new();

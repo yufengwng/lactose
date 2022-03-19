@@ -1,7 +1,8 @@
-use crate::ast::Ast;
-use crate::ast::Expr;
-use crate::ast::Item;
-use crate::ast::RelOp;
+use ltlang::ast::Ast;
+use ltlang::ast::Expr;
+use ltlang::ast::Item;
+use ltlang::ast::RelOp;
+
 use crate::code::Chunk;
 use crate::code::OpCode::*;
 use crate::value::Value;
@@ -13,7 +14,7 @@ impl CodeGen {
         Self {}
     }
 
-    pub fn gen(&self, ast: &Ast) -> Result<Chunk, String> {
+    pub fn compile(&self, ast: &Ast) -> Result<Chunk, String> {
         let mut chunk = Chunk::new();
         for item in &ast.nodes {
             match item {
@@ -34,7 +35,7 @@ impl CodeGen {
                 chunk.write_byte(idx as u8);
             }
             Expr::Num(lit) => {
-                self.emit_val(chunk, Value::Num(*lit));
+                self.emit_const(chunk, Value::Num(*lit));
             }
             Expr::Bool(lit) => {
                 chunk.write(if *lit { OpTrue } else { OpFalse });
@@ -91,7 +92,7 @@ impl CodeGen {
         }
     }
 
-    fn emit_val(&self, chunk: &mut Chunk, value: Value) {
+    fn emit_const(&self, chunk: &mut Chunk, value: Value) {
         let idx = chunk.add(value);
         chunk.write(OpConst);
         chunk.write_byte(idx as u8);

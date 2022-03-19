@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
+use ltlang::parse::Parser;
+
 use crate::cgen::CodeGen;
 use crate::code::Chunk;
 use crate::code::OpCode;
 use crate::code::OpCode::*;
-use crate::parse::Parser;
 use crate::value::Value;
 
 pub enum MitoRes {
@@ -51,7 +52,7 @@ impl MitoVM {
             Ok(ls) => ls,
             Err(msg) => return MitoRes::CompileErr(msg),
         };
-        let chunk = match CodeGen::new().gen(&ast) {
+        let chunk = match CodeGen::new().compile(&ast) {
             Ok(ch) => ch,
             Err(msg) => return MitoRes::CompileErr(msg),
         };
@@ -74,7 +75,6 @@ impl MitoVM {
         MitoRes::Ok(res)
     }
 
-    #[inline]
     fn dispatch(&mut self, env: &mut MitoEnv, chunk: &Chunk, opcode: OpCode) {
         match opcode {
             OpNop => return,

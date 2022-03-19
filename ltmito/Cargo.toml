@@ -1,0 +1,7 @@
+[package]
+name = "ltmito"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ltlang = { path = "../ltlang" }
