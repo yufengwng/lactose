@@ -53,8 +53,8 @@ pub fn start() -> Result<(), String> {
                 println!("{}", val);
                 env.set("_", val);
             }
-            MitoRes::CompileErr(msg) => return Err(format!("compile error: {}", msg)),
-            MitoRes::RuntimeErr(msg) => return Err(format!("runtime error: {}", msg)),
+            MitoRes::CompileErr(msg) => eprintln!("compile error: {}", msg),
+            MitoRes::RuntimeErr(msg) => eprintln!("runtime error: {}", msg),
         }
     }
 }

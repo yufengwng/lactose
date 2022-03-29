@@ -1,14 +1,9 @@
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TKind {
     TkErr,
     TkEof,
     TkSemi,
     TkNLine,
-    TkTrue,
-    TkFalse,
-    TkInt,
-    TkReal,
-    TkIdent,
     TkLparen,
     TkRparen,
     TkPlus,
@@ -23,6 +18,13 @@ pub enum TKind {
     TkGtEq,
     TkEqEq,
     TkNotEq,
+    TkTrue,
+    TkFalse,
+    TkInt,
+    TkBin,
+    TkHex,
+    TkReal,
+    TkIdent,
 }
 
 #[derive(Clone)]

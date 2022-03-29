@@ -4,7 +4,8 @@ use std::fmt;
 pub enum Value {
     Unit,
     Bool(bool),
-    Num(f64),
+    Int(i32),
+    Real(f64),
     Str(String),
 }
 
@@ -17,8 +18,12 @@ impl Value {
         matches!(self, Self::Bool(..))
     }
 
-    pub fn is_num(&self) -> bool {
-        matches!(self, Self::Num(..))
+    pub fn is_int(&self) -> bool {
+        matches!(self, Self::Int(..))
+    }
+
+    pub fn is_real(&self) -> bool {
+        matches!(self, Self::Real(..))
     }
 
     pub fn is_str(&self) -> bool {
@@ -32,9 +37,16 @@ impl Value {
         }
     }
 
-    pub fn as_num(self) -> f64 {
+    pub fn as_int(self) -> i32 {
         match self {
-            Self::Num(n) => n,
+            Self::Int(n) => n,
+            _ => panic!(),
+        }
+    }
+
+    pub fn as_real(self) -> f64 {
+        match self {
+            Self::Real(n) => n,
             _ => panic!(),
         }
     }
@@ -45,6 +57,19 @@ impl Value {
             _ => panic!(),
         }
     }
+
+    pub fn is_eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Bool(b1), Value::Bool(b2)) => *b1 == *b2,
+            (Value::Int(i1), Value::Int(i2)) => i1 == i2,
+            (Value::Int(i), Value::Real(f)) => (*i as f64) == *f,
+            (Value::Real(f), Value::Int(i)) => *f == (*i as f64),
+            (Value::Real(f1), Value::Real(f2)) => *f1 == *f2,
+            (Value::Str(s1), Value::Str(s2)) => *s1 == *s2,
+            (Value::Unit, Value::Unit) => true,
+            _ => false,
+        }
+    }
 }
 
 impl fmt::Display for Value {
@@ -52,7 +77,8 @@ impl fmt::Display for Value {
         match self {
             Self::Unit => write!(f, "(unit)"),
             Self::Bool(b) => write!(f, "{}", b),
-            Self::Num(n) => write!(f, "{}", n),
+            Self::Int(n) => write!(f, "{}", n),
+            Self::Real(n) => write!(f, "{}", n),
             Self::Str(s) => write!(f, "{}", s),
         }
     }

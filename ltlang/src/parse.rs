@@ -184,10 +184,31 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
-    fn expr_num(&mut self) -> Result<(), String> {
-        let expr = match self.curr.lexeme().parse::<f64>() {
-            Err(_) => return Err(format!("invalid number format")),
-            Ok(num) => Expr::Num(num),
+    fn expr_int(&mut self) -> Result<(), String> {
+        let lexeme = self.curr.lexeme()
+            .trim_start_matches("0b")
+            .trim_start_matches("0x")
+            .replace('_', "");
+        let radix = match self.curr.kind {
+            TkInt => 10,
+            TkBin => 2,
+            TkHex => 16,
+            _ => unreachable!(),
+        };
+        let expr = match i32::from_str_radix(&lexeme, radix) {
+            Err(_) => return Err(format!("invalid integer format")),
+            Ok(int) => Expr::Int(int),
+        };
+        self.stack.push(expr);
+        Ok(())
+    }
+
+    fn expr_real(&mut self) -> Result<(), String> {
+        let lexeme = self.curr.lexeme()
+            .replace('_', "");
+        let expr = match lexeme.parse::<f64>() {
+            Err(_) => return Err(format!("invalid real format")),
+            Ok(num) => Expr::Real(num),
         };
         self.stack.push(expr);
         Ok(())
@@ -200,7 +221,10 @@ impl<'a> Parser<'a> {
 
     fn dispatch_prefix_op(&mut self) -> Result<(), String> {
         return match self.curr.kind {
-            TkReal => self.expr_num(),
+            TkInt => self.expr_int(),
+            TkBin => self.expr_int(),
+            TkHex => self.expr_int(),
+            TkReal => self.expr_real(),
             TkTrue => self.expr_literal(),
             TkFalse => self.expr_literal(),
             TkIdent => self.expr_ident(),

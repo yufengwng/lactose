@@ -88,87 +88,79 @@ impl MitoVM {
                 self.stack.push(val);
             }
             OpAdd => {
-                let rhs = self.stack.pop().unwrap().as_num();
-                let lhs = self.stack.pop().unwrap().as_num();
+                let rhs = self.pop_as_float();
+                let lhs = self.pop_as_float();
                 let val = lhs + rhs;
-                self.stack.push(Value::Num(val));
+                self.stack.push(Value::Real(val));
             }
             OpSub => {
-                let rhs = self.stack.pop().unwrap().as_num();
-                let lhs = self.stack.pop().unwrap().as_num();
+                let rhs = self.pop_as_float();
+                let lhs = self.pop_as_float();
                 let val = lhs - rhs;
-                self.stack.push(Value::Num(val));
+                self.stack.push(Value::Real(val));
             }
             OpMul => {
-                let rhs = self.stack.pop().unwrap().as_num();
-                let lhs = self.stack.pop().unwrap().as_num();
+                let rhs = self.pop_as_float();
+                let lhs = self.pop_as_float();
                 let val = lhs * rhs;
-                self.stack.push(Value::Num(val));
+                self.stack.push(Value::Real(val));
             }
             OpDiv => {
-                let rhs = self.stack.pop().unwrap().as_num();
-                let lhs = self.stack.pop().unwrap().as_num();
+                let rhs = self.pop_as_float();
+                let lhs = self.pop_as_float();
                 let val = lhs / rhs;
-                self.stack.push(Value::Num(val));
+                self.stack.push(Value::Real(val));
             }
             OpRem => {
-                let rhs = self.stack.pop().unwrap().as_num();
-                let lhs = self.stack.pop().unwrap().as_num();
+                let rhs = self.pop_as_float();
+                let lhs = self.pop_as_float();
                 let val = lhs % rhs;
-                self.stack.push(Value::Num(val));
+                self.stack.push(Value::Real(val));
             }
             OpPow => {
-                let rhs = self.stack.pop().unwrap().as_num();
-                let lhs = self.stack.pop().unwrap().as_num();
+                let rhs = self.pop_as_float();
+                let lhs = self.pop_as_float();
                 let val = lhs.powf(rhs);
-                self.stack.push(Value::Num(val));
+                self.stack.push(Value::Real(val));
             }
             OpNeg => {
-                let val = self.stack.pop().unwrap().as_num();
-                self.stack.push(Value::Num(-val));
+                let val = self.pop_as_float();
+                self.stack.push(Value::Real(-val));
             }
             OpLt => {
-                let rhs = self.stack.pop().unwrap().as_num();
-                let lhs = self.stack.pop().unwrap().as_num();
+                let rhs = self.pop_as_float();
+                let lhs = self.pop_as_float();
                 let val = lhs < rhs;
                 self.stack.push(Value::Bool(val));
             }
             OpGt => {
-                let rhs = self.stack.pop().unwrap().as_num();
-                let lhs = self.stack.pop().unwrap().as_num();
+                let rhs = self.pop_as_float();
+                let lhs = self.pop_as_float();
                 let val = lhs > rhs;
                 self.stack.push(Value::Bool(val));
             }
             OpLtEq => {
-                let rhs = self.stack.pop().unwrap().as_num();
-                let lhs = self.stack.pop().unwrap().as_num();
+                let rhs = self.pop_as_float();
+                let lhs = self.pop_as_float();
                 let val = lhs <= rhs;
                 self.stack.push(Value::Bool(val));
             }
             OpGtEq => {
-                let rhs = self.stack.pop().unwrap().as_num();
-                let lhs = self.stack.pop().unwrap().as_num();
+                let rhs = self.pop_as_float();
+                let lhs = self.pop_as_float();
                 let val = lhs >= rhs;
                 self.stack.push(Value::Bool(val));
             }
             OpEqual => {
                 let rhs = self.stack.pop().unwrap();
                 let lhs = self.stack.pop().unwrap();
-                let is_eq = match (lhs.is_num(), rhs.is_num()) {
-                    (true, true) => lhs.as_num() == rhs.as_num(),
-                    (false, false) => lhs.as_bool() == rhs.as_bool(),
-                    _ => false,
-                };
+                let is_eq = lhs.is_eq(&rhs);
                 self.stack.push(Value::Bool(is_eq));
             }
             OpNotEq => {
                 let rhs = self.stack.pop().unwrap();
                 let lhs = self.stack.pop().unwrap();
-                let is_eq = match (lhs.is_num(), rhs.is_num()) {
-                    (true, true) => lhs.as_num() == rhs.as_num(),
-                    (false, false) => lhs.as_bool() == rhs.as_bool(),
-                    _ => false,
-                };
+                let is_eq = lhs.is_eq(&rhs);
                 self.stack.push(Value::Bool(!is_eq));
             }
             OpLoop => todo!(),
@@ -184,6 +176,15 @@ impl MitoVM {
             OpPop => {
                 self.stack.pop();
             }
+        }
+    }
+
+    fn pop_as_float(&mut self) -> f64 {
+        let val = self.stack.pop().unwrap();
+        if val.is_int() {
+            val.as_int() as f64
+        } else {
+            val.as_real()
         }
     }
 }

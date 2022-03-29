@@ -34,8 +34,11 @@ impl CodeGen {
                 chunk.write(OpGet);
                 chunk.write_byte(idx as u8);
             }
-            Expr::Num(lit) => {
-                self.emit_const(chunk, Value::Num(*lit));
+            Expr::Int(lit) => {
+                self.emit_const(chunk, Value::Int(*lit));
+            }
+            Expr::Real(lit) => {
+                self.emit_const(chunk, Value::Real(*lit));
             }
             Expr::Bool(lit) => {
                 chunk.write(if *lit { OpTrue } else { OpFalse });
