@@ -6,52 +6,87 @@ use ltmito::vm::MitoRes;
 use ltmito::vm::MitoVM;
 
 pub fn start() -> Result<(), String> {
-    let mut vm = MitoVM::new();
-    let mut env = MitoEnv::new();
-    let mut editor = Editor::<()>::new();
-    loop {
-        let mut lines = Vec::new();
-        let mut input = editor.readline("lt> ");
-        loop {
-            // let len = io::stdin().read_line(&mut buffer)?;
-            // if len == 0 {
-            //     // Reached EOF, erase control char by writing backspace and exit.
-            //     println!("{}", 8_u8 as char);
-            //     return Ok(());
-            // }
+    Repl::new().start()
+}
 
-            let line = match input {
-                Ok(line) => line,
-                Err(ReadlineError::Interrupted) => return Ok(()),
-                Err(ReadlineError::Eof) => return Ok(()),
-                Err(err) => {
-                    return Err(format!("error reading input: {}", err));
-                }
+struct Repl {
+    vm: MitoVM,
+    env: MitoEnv,
+    editor: Editor<()>,
+}
+
+impl Repl {
+    fn new() -> Self {
+        Self {
+            vm: MitoVM::new(),
+            env: MitoEnv::new(),
+            editor: Editor::<()>::new(),
+        }
+    }
+
+    fn start(&mut self) -> Result<(), String> {
+        loop {
+            let src = self.read_input()?;
+            let src = match src {
+                Some(s) => s,
+                None => return Ok(()),
+            };
+            if src.is_empty() {
+                continue;
+            }
+            self.run_source(&src);
+        }
+    }
+
+    fn read_input(&mut self) -> Result<Option<String>, String> {
+        let line = self.read_line("lt> ")?;
+        let line = match line {
+            Some(ln) => ln,
+            None => return Ok(None),
+        };
+
+        let line = line.trim();
+        if !line.ends_with("\\;") {
+            return Ok(Some(line.to_owned()));
+        }
+
+        let mut lines = Vec::new();
+        lines.push(line[..line.len() - 2].to_owned());
+
+        loop {
+            let line = self.read_line("  · ")?; // middot
+            let line = match line {
+                Some(ln) => ln,
+                None => return Ok(None),
             };
 
             let line = line.trim();
             if line.ends_with(";;") {
-                let line = &line[..line.len() - 2];
-                lines.push(line.to_owned());
+                lines.push(line[..line.len() - 2].to_owned());
                 break;
             }
-            if line.is_empty() && lines.is_empty() {
-                break;
-            }
+
             lines.push(line.to_owned());
-
-            input = editor.readline("  · "); // middot
         }
 
-        let source = lines.join("\n").trim().to_owned();
-        if source.is_empty() {
-            continue;
-        }
+        let input = lines.join("\n").trim().to_owned();
+        Ok(Some(input))
+    }
 
-        match vm.run(&mut env, &source) {
+    fn read_line(&mut self, prompt: &str) -> Result<Option<String>, String> {
+        match self.editor.readline(prompt) {
+            Ok(line) => Ok(Some(line)),
+            Err(ReadlineError::Interrupted) => Ok(None),
+            Err(ReadlineError::Eof) => Ok(None),
+            Err(err) => Err(format!("error reading input: {}", err)),
+        }
+    }
+
+    fn run_source(&mut self, src: &str) {
+        match self.vm.run(&mut self.env, src) {
             MitoRes::Ok(val) => {
                 println!("{}", val);
-                env.set("_", val);
+                self.env.set("_", val);
             }
             MitoRes::CompileErr(msg) => eprintln!("compile error: {}", msg),
             MitoRes::RuntimeErr(msg) => eprintln!("runtime error: {}", msg),
