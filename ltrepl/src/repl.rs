@@ -1,5 +1,5 @@
+use rustyline as rl;
 use rustyline::error::ReadlineError;
-use rustyline::Editor;
 
 use ltmito::vm::MitoEnv;
 use ltmito::vm::MitoRes;
@@ -12,19 +12,22 @@ pub fn start() -> Result<(), String> {
 struct Repl {
     vm: MitoVM,
     env: MitoEnv,
-    editor: Editor<()>,
+    editor: rl::Editor<()>,
 }
 
 impl Repl {
     fn new() -> Self {
+        let cfg = rl::Config::builder().edit_mode(rl::EditMode::Vi).build();
+        let editor = rl::Editor::<()>::with_config(cfg);
         Self {
             vm: MitoVM::new(),
             env: MitoEnv::new(),
-            editor: Editor::<()>::new(),
+            editor,
         }
     }
 
     fn start(&mut self) -> Result<(), String> {
+        println!("[[ lt - lang tools ]]");
         loop {
             let src = self.read_input()?;
             let src = match src {
@@ -39,7 +42,7 @@ impl Repl {
     }
 
     fn read_input(&mut self) -> Result<Option<String>, String> {
-        let line = self.read_line("lt> ")?;
+        let line = self.read_line(">> ")?;
         let line = match line {
             Some(ln) => ln,
             None => return Ok(None),
@@ -54,7 +57,7 @@ impl Repl {
         lines.push(line[..line.len() - 2].to_owned());
 
         loop {
-            let line = self.read_line("  · ")?; // middot
+            let line = self.read_line("·· ")?; // middot
             let line = match line {
                 Some(ln) => ln,
                 None => return Ok(None),
