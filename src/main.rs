@@ -6,6 +6,7 @@ use ltrepl::repl;
 #[derive(Parser)]
 #[clap(version)]
 #[clap(about = "lt - lang tools")]
+#[clap(disable_colored_help = true)]
 struct Cli {
     #[clap(subcommand)]
     cmd: Option<Command>,

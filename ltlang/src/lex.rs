@@ -6,6 +6,8 @@ pub struct Lexer<'a> {
     src: &'a [u8],
     head: usize,
     curr: usize,
+    line: usize,
+    coln: usize,
 }
 
 impl<'a> Lexer<'a> {
@@ -14,16 +16,30 @@ impl<'a> Lexer<'a> {
             src: src.as_bytes(),
             head: 0,
             curr: 0,
+            line: 1,
+            coln: 1,
         }
     }
 
     pub fn scan(&mut self) -> Token<'a> {
+        let kind = self.next_token_kind();
+        let mut token = Token::new(kind, self.bytes());
+        token.line = self.line;
+        token.coln = self.coln;
+        self.shift();
+        token
+    }
+
+    fn next_token_kind(&mut self) -> TKind {
         self.skip_blanks();
         if self.is_eof() {
-            return Token::eof();
+            return TkEof;
         }
-
-        let kind = match self.advance() {
+        return match self.advance() {
+            b'#' => {
+                self.discard_comment();
+                self.next_token_kind()
+            }
             b'_' => TkIdent,
             b';' => TkSemi,
             b'(' => TkLparen,
@@ -56,10 +72,13 @@ impl<'a> Lexer<'a> {
             c if is_alpha(c) => self.scan_bool(),
             _ => TkErr,
         };
+    }
 
-        let token = Token::new(kind, self.bytes());
+    fn discard_comment(&mut self) {
+        while !self.is_eof() && self.curr() != b'\n' {
+            self.consume();
+        }
         self.shift();
-        token
     }
 
     fn scan_bin(&mut self) -> TKind {
@@ -167,6 +186,16 @@ impl<'a> Lexer<'a> {
         ch
     }
 
+    fn advance_line(&mut self) {
+        self.line += 1;
+        self.coln = 1;
+    }
+
+    fn advance_column(&mut self) {
+        let num_chars = std::str::from_utf8(self.bytes()).unwrap().chars().count();
+        self.coln += num_chars;
+    }
+
     fn matches(&mut self, c: u8) -> bool {
         if self.peek(0) == c {
             self.advance();
@@ -181,12 +210,19 @@ impl<'a> Lexer<'a> {
     }
 
     fn shift(&mut self) {
+        self.advance_column();
         self.head = self.curr;
     }
 
     fn skip_blanks(&mut self) {
         while !self.is_eof() && is_spacing(self.curr()) {
-            self.consume();
+            if self.curr() == b'\n' {
+                self.consume();
+                self.advance_line();
+                self.head = self.curr;
+            } else {
+                self.consume();
+            }
         }
         self.shift();
     }
@@ -224,6 +260,32 @@ fn is_spacing(c: u8) -> bool {
 mod tests {
     use super::Lexer;
     use super::TKind::*;
+
+    #[test]
+    fn line_comment() {
+        let src = "# hello world";
+        let mut lexer = Lexer::new(src);
+        let tok = lexer.scan();
+        assert_eq!(tok.kind, TkEof);
+    }
+
+    #[test]
+    fn line_comment_empty() {
+        let src = "# ";
+        let mut lexer = Lexer::new(src);
+        let tok = lexer.scan();
+        assert_eq!(tok.kind, TkEof);
+    }
+
+    #[test]
+    fn line_comment_multiple() {
+        let src = "# first\n# second\n123\n# last";
+        let mut lexer = Lexer::new(src);
+        let tok = lexer.scan();
+        assert_eq!(tok.kind, TkInt);
+        let tok = lexer.scan();
+        assert_eq!(tok.kind, TkEof);
+    }
 
     #[test]
     fn literal_bin() {

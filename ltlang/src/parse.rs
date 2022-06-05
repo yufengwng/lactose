@@ -27,8 +27,11 @@ impl<'a> Parser<'a> {
     pub fn ast(mut self) -> Result<Ast, String> {
         self.curr = self.next.clone();
         self.next = self.lexer.scan();
-        self.advance()?;
+        if self.next.kind == TkEof {
+            return Ok(Ast::new());
+        }
 
+        self.advance()?;
         self.expression()?;
         while self.next.kind != TkEof {
             if self.next.kind == TkErr {
