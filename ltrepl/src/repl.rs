@@ -1,12 +1,17 @@
 use rustyline as rl;
 use rustyline::error::ReadlineError;
 
+use ltmito::value::Value;
 use ltmito::vm::MitoEnv;
 use ltmito::vm::MitoRes;
 use ltmito::vm::MitoVM;
 
 pub fn start() -> Result<(), String> {
     Repl::new().start()
+}
+
+pub fn run(source: &str) -> Result<Value, String> {
+    Repl::new().run(source)
 }
 
 struct Repl {
@@ -16,7 +21,7 @@ struct Repl {
 }
 
 impl Repl {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let cfg = rl::Config::builder().edit_mode(rl::EditMode::Vi).build();
         let editor = rl::Editor::<()>::with_config(cfg);
         Self {
@@ -26,7 +31,7 @@ impl Repl {
         }
     }
 
-    fn start(&mut self) -> Result<(), String> {
+    pub fn start(&mut self) -> Result<(), String> {
         println!("[[ lt - lang tools ]]");
         loop {
             let src = self.read_input()?;
@@ -37,7 +42,21 @@ impl Repl {
             if src.is_empty() {
                 continue;
             }
-            self.run_source(&src);
+            match self.run(&src) {
+                Ok(val) => {
+                    println!("{}", val);
+                    self.env.set("_", val);
+                }
+                Err(msg) => eprintln!("{}", msg),
+            }
+        }
+    }
+
+    pub fn run(&mut self, source: &str) -> Result<Value, String> {
+        match self.vm.run(&mut self.env, source) {
+            MitoRes::Ok(val) => Ok(val),
+            MitoRes::CompileErr(msg) => Err(format!("compile error: {}", msg)),
+            MitoRes::RuntimeErr(msg) => Err(format!("runtime error: {}", msg)),
         }
     }
 
@@ -82,17 +101,6 @@ impl Repl {
             Err(ReadlineError::Interrupted) => Ok(None),
             Err(ReadlineError::Eof) => Ok(None),
             Err(err) => Err(format!("error reading input: {}", err)),
-        }
-    }
-
-    fn run_source(&mut self, src: &str) {
-        match self.vm.run(&mut self.env, src) {
-            MitoRes::Ok(val) => {
-                println!("{}", val);
-                self.env.set("_", val);
-            }
-            MitoRes::CompileErr(msg) => eprintln!("compile error: {}", msg),
-            MitoRes::RuntimeErr(msg) => eprintln!("runtime error: {}", msg),
         }
     }
 }
