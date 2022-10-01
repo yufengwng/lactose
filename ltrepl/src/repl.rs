@@ -32,7 +32,7 @@ impl Repl {
     }
 
     pub fn start(&mut self) -> Result<(), String> {
-        println!("[[ lt - lang tools ]]");
+        println!("[[ lt - laftale ]]");
         loop {
             let src = self.read_input()?;
             let src = match src {

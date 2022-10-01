@@ -4,13 +4,13 @@ version = "0.1.0"
 authors = ["Yufeng Wang <yufengwang05@gmail.com>"]
 edition = "2021"
 
-[dependencies]
-clap = { version = "3.1", features = ["derive"] }
-ltrepl = { path = "ltrepl" }
-
 [workspace]
 members = [
   "ltlang",
   "ltmito",
   "ltrepl",
 ]
+
+[dependencies]
+clap = { version = "3.1", features = ["derive"] }
+ltrepl = { path = "ltrepl" }

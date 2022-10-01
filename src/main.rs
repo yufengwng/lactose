@@ -6,7 +6,7 @@ use clap::Subcommand;
 
 use ltrepl::repl;
 
-const LT_ABOUT: &str = "lt - lang tools";
+const LT_ABOUT: &str = "lt - laftale";
 const LT_USAGE: &str = "lt <OPTIONS> [FILE | SUBCOMMAND ...]";
 
 #[derive(Parser)]
