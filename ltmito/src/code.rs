@@ -27,6 +27,7 @@ pub enum OpCode {
     OpJump,
     OpBranch,
     OpGet,
+    OpCall,
     OpPop,
 }
 

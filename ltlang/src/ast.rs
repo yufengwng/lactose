@@ -67,10 +67,11 @@ impl RelOp {
 }
 
 pub enum Expr {
-    Ident,
     Int(i32),
     Real(f64),
     Bool(bool),
+    Ident(String),
+    Call(Box<Expr>, Vec<Expr>),
     Power(Box<Expr>, Box<Expr>),
     Negate(Box<Expr>),
     Mul(Box<Expr>, Box<Expr>),

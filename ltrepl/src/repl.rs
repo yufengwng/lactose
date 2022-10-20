@@ -26,7 +26,7 @@ impl Repl {
         let editor = rl::Editor::<()>::with_config(cfg);
         Self {
             vm: MitoVM::new(),
-            env: MitoEnv::new(),
+            env: MitoEnv::with_builtins(),
             editor,
         }
     }
@@ -47,7 +47,7 @@ impl Repl {
                     println!("{}", val);
                     self.env.set("_", val);
                 }
-                Err(msg) => eprintln!("{}", msg),
+                Err(msg) => eprintln!("[E] {}", msg),
             }
         }
     }

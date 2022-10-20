@@ -218,8 +218,26 @@ impl<'a> Parser<'a> {
     }
 
     fn expr_ident(&mut self) -> Result<(), String> {
-        self.stack.push(Expr::Ident);
+        let name = self.curr.lexeme();
+        self.stack.push(Expr::Ident(name.to_owned()));
         Ok(())
+    }
+
+    fn expr_call(&mut self) -> Result<(), String> {
+        self.advance()?;
+        let args = self.parse_arguments()?;
+        let callee = self.stack.pop().unwrap();
+        let expr = Expr::Call(Box::new(callee), args);
+        self.stack.push(expr);
+        Ok(())
+    }
+
+    fn parse_arguments(&mut self) -> Result<Vec<Expr>, String> {
+        let mut args = Vec::new();
+        self.expression()?;
+        args.push(self.stack.pop().unwrap());
+        self.consume_next(TkRparen, "expected ')' after arguments")?;
+        Ok(args)
     }
 
     fn dispatch_prefix_op(&mut self) -> Result<(), String> {
@@ -239,6 +257,7 @@ impl<'a> Parser<'a> {
 
     fn dispatch_infix_op(&mut self) -> Result<(), String> {
         return match self.curr.kind {
+            TkLparen => self.expr_call(),
             TkCaret => self.expr_power(),
             TkPlus => self.expr_binary(),
             TkMinus => self.expr_binary(),
@@ -265,12 +284,14 @@ enum Prec {
     Factor,   // * / %
     Unary,    // -
     Power,    // ^
+    Call,     // ()
     Primary,
 }
 
 impl Prec {
     fn of(tkind: &TKind) -> Self {
         match tkind {
+            TkLparen => Self::Call,
             TkCaret => Self::Power,
             TkPlus => Self::Term,
             TkMinus => Self::Term,
@@ -294,7 +315,8 @@ impl Prec {
             Self::Term => Self::Factor,
             Self::Factor => Self::Unary,
             Self::Unary => Self::Power,
-            Self::Power => Self::Primary,
+            Self::Power => Self::Call,
+            Self::Call => Self::Primary,
             Self::Primary => Self::Primary,
         }
     }

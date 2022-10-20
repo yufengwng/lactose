@@ -31,7 +31,7 @@ pub enum TKind {
 pub struct Token<'a> {
     pub kind: TKind,
     pub line: usize,
-    pub coln: usize,
+    pub col: usize,
     span: &'a [u8],
 }
 
@@ -41,7 +41,7 @@ impl<'a> Token<'a> {
     }
 
     pub fn new(kind: TKind, span: &'a [u8]) -> Self {
-        Self { kind, span, line: 1, coln: 1 }
+        Self { kind, span, line: 1, col: 1 }
     }
 
     pub fn lexeme(&self) -> &'a str {

@@ -7,7 +7,7 @@ pub struct Lexer<'a> {
     head: usize,
     curr: usize,
     line: usize,
-    coln: usize,
+    col: usize,
 }
 
 impl<'a> Lexer<'a> {
@@ -17,7 +17,7 @@ impl<'a> Lexer<'a> {
             head: 0,
             curr: 0,
             line: 1,
-            coln: 1,
+            col: 1,
         }
     }
 
@@ -25,7 +25,7 @@ impl<'a> Lexer<'a> {
         let kind = self.next_token_kind();
         let mut token = Token::new(kind, self.bytes());
         token.line = self.line;
-        token.coln = self.coln;
+        token.col = self.col;
         self.shift();
         token
     }
@@ -40,7 +40,6 @@ impl<'a> Lexer<'a> {
                 self.discard_comment();
                 self.next_token_kind()
             }
-            b'_' => TkIdent,
             b';' => TkSemi,
             b'(' => TkLparen,
             b')' => TkRparen,
@@ -69,7 +68,7 @@ impl<'a> Lexer<'a> {
             b'0' if self.matches(b'b') => self.scan_bin(),
             b'0' if self.matches(b'x') => self.scan_hex(),
             c if is_digit(c) => self.scan_num(),
-            c if is_alpha(c) => self.scan_bool(),
+            c if is_alscore(c) => self.scan_word(),
             _ => TkErr,
         };
     }
@@ -104,7 +103,7 @@ impl<'a> Lexer<'a> {
         while !self.is_eof() {
             let c = self.curr();
             let is_sep = is_digit_sep(c);
-            if !is_sep && !is_alphanum(c) {
+            if !is_sep && !is_alnum(c) {
                 break;
             }
             let is_hex = is_hex_digit(c);
@@ -120,7 +119,7 @@ impl<'a> Lexer<'a> {
         while !self.is_eof() {
             let c = self.curr();
             let is_sep = is_digit_sep(c);
-            if !is_sep && !is_alphanum(c) {
+            if !is_sep && !is_alnum(c) {
                 break;
             }
             valid = valid && (is_digit(c) || is_sep);
@@ -142,22 +141,22 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn scan_bool(&mut self) -> TKind {
-        self.curr = self.head + 4;
+    fn scan_word(&mut self) -> TKind {
+        while !self.is_eof() && is_alnumscore(self.curr()) {
+            self.consume();
+        }
+
         let t_str = "true".as_bytes();
         if self.curr <= self.src.len() && self.bytes() == t_str {
             return TkTrue;
         }
 
-        self.curr = self.head + 5;
         let f_str = "false".as_bytes();
         if self.curr <= self.src.len() && self.bytes() == f_str {
             return TkFalse;
         }
 
-        // Restore current char pointer and signal error.
-        self.curr = self.head + 1;
-        TkErr
+        TkIdent
     }
 
     fn is_eof(&self) -> bool {
@@ -188,12 +187,12 @@ impl<'a> Lexer<'a> {
 
     fn advance_line(&mut self) {
         self.line += 1;
-        self.coln = 1;
+        self.col = 1;
     }
 
     fn advance_column(&mut self) {
         let num_chars = std::str::from_utf8(self.bytes()).unwrap().chars().count();
-        self.coln += num_chars;
+        self.col += num_chars;
     }
 
     fn matches(&mut self, c: u8) -> bool {
@@ -228,8 +227,8 @@ impl<'a> Lexer<'a> {
     }
 }
 
-fn is_alpha(c: u8) -> bool {
-    c.is_ascii_alphabetic()
+fn is_spacing(c: u8) -> bool {
+    (c as char).is_whitespace()
 }
 
 fn is_digit(c: u8) -> bool {
@@ -248,12 +247,16 @@ fn is_hex_digit(c: u8) -> bool {
     c.is_ascii_hexdigit()
 }
 
-fn is_alphanum(c: u8) -> bool {
+fn is_alnum(c: u8) -> bool {
     c.is_ascii_alphanumeric()
 }
 
-fn is_spacing(c: u8) -> bool {
-    (c as char).is_whitespace()
+fn is_alscore(c: u8) -> bool {
+    c == b'_' || c.is_ascii_alphabetic()
+}
+
+fn is_alnumscore(c: u8) -> bool {
+    c == b'_' || c.is_ascii_alphanumeric()
 }
 
 #[cfg(test)]

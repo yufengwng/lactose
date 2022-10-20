@@ -1,4 +1,5 @@
 use std::fmt;
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -7,6 +8,7 @@ pub enum Value {
     Int(i32),
     Real(f64),
     Str(String),
+    Native(Rc<FnNative>),
 }
 
 impl Value {
@@ -28,6 +30,10 @@ impl Value {
 
     pub fn is_str(&self) -> bool {
         matches!(self, Self::Str(..))
+    }
+
+    pub fn is_native(&self) -> bool {
+        matches!(self, Self::Native(..))
     }
 
     pub fn as_bool(self) -> bool {
@@ -58,6 +64,13 @@ impl Value {
         }
     }
 
+    pub fn as_native(self) -> Rc<FnNative> {
+        match self {
+            Self::Native(native) => native,
+            _ => panic!(),
+        }
+    }
+
     pub fn is_eq(&self, other: &Self) -> bool {
         match (self, other) {
             (Value::Bool(b1), Value::Bool(b2)) => *b1 == *b2,
@@ -66,6 +79,7 @@ impl Value {
             (Value::Real(f), Value::Int(i)) => *f == (*i as f64),
             (Value::Real(f1), Value::Real(f2)) => *f1 == *f2,
             (Value::Str(s1), Value::Str(s2)) => *s1 == *s2,
+            (Value::Native(n1), Value::Native(n2)) => Rc::ptr_eq(n1, n2),
             (Value::Unit, Value::Unit) => true,
             _ => false,
         }
@@ -80,6 +94,36 @@ impl fmt::Display for Value {
             Self::Int(n) => write!(f, "{}", n),
             Self::Real(n) => write!(f, "{}", n),
             Self::Str(s) => write!(f, "{}", s),
+            Self::Native(native) => fmt::Display::fmt(native, f),
         }
+    }
+}
+
+pub type NativeFnPtr = fn(Vec<Value>) -> Value;
+
+#[derive(Debug)]
+pub struct FnNative {
+    pub name: String,
+    pub arity: usize,
+    pub function: NativeFnPtr,
+}
+
+impl FnNative {
+    pub fn new(name: &str, arity: usize, function: NativeFnPtr) -> Self {
+        Self {
+            name: name.to_owned(),
+            arity,
+            function,
+        }
+    }
+
+    pub fn invoke(&self, args: Vec<Value>) -> Value {
+        (self.function)(args)
+    }
+}
+
+impl fmt::Display for FnNative {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "(native {})", self.name)
     }
 }

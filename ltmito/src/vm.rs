@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use ltlang::parse::Parser;
 
@@ -6,6 +7,7 @@ use crate::cgen::CodeGen;
 use crate::code::Chunk;
 use crate::code::OpCode;
 use crate::code::OpCode::*;
+use crate::value::FnNative;
 use crate::value::Value;
 
 pub enum MitoRes {
@@ -23,6 +25,13 @@ impl MitoEnv {
         Self {
             vals: HashMap::new(),
         }
+    }
+
+    pub fn with_builtins() -> Self {
+        let mut env = Self::new();
+        let native = FnNative::new("println", 1, native_println);
+        env.set("println", Value::Native(Rc::new(native)));
+        env
     }
 
     pub fn set(&mut self, name: &str, value: Value) {
@@ -173,10 +182,36 @@ impl MitoVM {
                 let val = env.get(&name).unwrap();
                 self.stack.push(val);
             }
+            OpCall => {
+                let count = chunk.code(self.ip) as usize;
+                self.ip += 1;
+                let idx = self.stack.len() - count - 1;
+                let callee = self.stack[idx].clone();
+                self.dispatch_call(callee, count);
+            }
             OpPop => {
                 self.stack.pop();
             }
         }
+    }
+
+    fn dispatch_call(&mut self, callee: Value, count: usize) {
+        match callee {
+            Value::Native(_) => self.call_native(callee.as_native(), count),
+            _ => panic!(),
+        }
+    }
+
+    fn call_native(&mut self, native: Rc<FnNative>, count: usize) {
+        if native.arity != count {
+            eprintln!("expected {} arguments but got {}", native.arity, count);
+            return;
+        }
+        let idx = self.stack.len() - count;
+        let args = self.stack.split_off(idx);
+        let result = native.invoke(args);
+        self.stack.pop();
+        self.stack.push(result);
     }
 
     fn pop_as_float(&mut self) -> f64 {
@@ -187,4 +222,9 @@ impl MitoVM {
             val.as_real()
         }
     }
+}
+
+fn native_println(args: Vec<Value>) -> Value {
+    println!("{}", args[0]);
+    Value::Unit
 }
