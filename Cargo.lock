@@ -453,6 +453,7 @@ name = "tile"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "tlproc",
  "tlrepl",
 ]
 
@@ -465,6 +466,15 @@ name = "tlmito"
 version = "0.1.0"
 dependencies = [
  "tllang",
+]
+
+[[package]]
+name = "tlproc"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
