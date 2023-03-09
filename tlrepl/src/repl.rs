@@ -1,10 +1,10 @@
 use rustyline as rl;
 use rustyline::error::ReadlineError;
 
-use ltmito::value::Value;
-use ltmito::vm::MitoEnv;
-use ltmito::vm::MitoRes;
-use ltmito::vm::MitoVM;
+use tlmito::value::Value;
+use tlmito::vm::MitoEnv;
+use tlmito::vm::MitoRes;
+use tlmito::vm::MitoVM;
 
 pub fn start() -> Result<(), String> {
     Repl::new().start()
@@ -32,7 +32,7 @@ impl Repl {
     }
 
     pub fn start(&mut self) -> Result<(), String> {
-        println!("[[ lt - laftale ]]");
+        println!("[[ tile-lang ]]");
         loop {
             let src = self.read_input()?;
             let src = match src {

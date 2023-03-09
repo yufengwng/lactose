@@ -1,7 +1,5 @@
-.lt/
 .vscode/
-
-/target
+target/
 
 *.swp
 *.code-workspace

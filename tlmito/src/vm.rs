@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use ltlang::parse::Parser;
+use tllang::parse::Parser;
 
 use crate::cgen::CodeGen;
 use crate::code::Chunk;

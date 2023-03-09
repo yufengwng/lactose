@@ -1,7 +1,7 @@
-use ltlang::ast::Ast;
-use ltlang::ast::Expr;
-use ltlang::ast::Item;
-use ltlang::ast::RelOp;
+use tllang::ast::Ast;
+use tllang::ast::Expr;
+use tllang::ast::Item;
+use tllang::ast::RelOp;
 
 use crate::code::Chunk;
 use crate::code::OpCode::*;

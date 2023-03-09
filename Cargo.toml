@@ -1,16 +1,16 @@
 [package]
-name = "lt"
+name = "tile"
 version = "0.1.0"
 authors = ["Yufeng Wang <yufengwang05@gmail.com>"]
 edition = "2021"
 
 [workspace]
 members = [
-  "ltlang",
-  "ltmito",
-  "ltrepl",
+  "tllang",
+  "tlmito",
+  "tlrepl",
 ]
 
 [dependencies]
 clap = { version = "3.1", features = ["derive"] }
-ltrepl = { path = "ltrepl" }
+tlrepl = { path = "tlrepl" }

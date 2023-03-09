@@ -4,15 +4,15 @@ use std::io::Read;
 use clap::Parser;
 use clap::Subcommand;
 
-use ltrepl::repl;
+use tlrepl::repl;
 
-const LT_ABOUT: &str = "lt - laftale";
-const LT_USAGE: &str = "lt <OPTIONS> [FILE | SUBCOMMAND ...]";
+const TL_ABOUT: &str = "the tile language";
+const TL_USAGE: &str = "tile <OPTIONS> [FILE | SUBCOMMAND ...]";
 
 #[derive(Parser)]
 #[clap(version)]
-#[clap(about = LT_ABOUT)]
-#[clap(override_usage = LT_USAGE)]
+#[clap(about = TL_ABOUT)]
+#[clap(override_usage = TL_USAGE)]
 #[clap(disable_colored_help = true)]
 struct Cli {
     #[clap(subcommand)]

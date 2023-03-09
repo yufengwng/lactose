@@ -1,8 +1,8 @@
 [package]
-name = "ltrepl"
+name = "tlrepl"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ltmito = { path = "../ltmito" }
+tlmito = { path = "../tlmito" }
 rustyline = "9.1"

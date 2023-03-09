@@ -223,33 +223,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lt"
-version = "0.1.0"
-dependencies = [
- "clap",
- "ltrepl",
-]
-
-[[package]]
-name = "ltlang"
-version = "0.1.0"
-
-[[package]]
-name = "ltmito"
-version = "0.1.0"
-dependencies = [
- "ltlang",
-]
-
-[[package]]
-name = "ltrepl"
-version = "0.1.0"
-dependencies = [
- "ltmito",
- "rustyline",
-]
-
-[[package]]
 name = "memchr"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -473,6 +446,33 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "tile"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "tlrepl",
+]
+
+[[package]]
+name = "tllang"
+version = "0.1.0"
+
+[[package]]
+name = "tlmito"
+version = "0.1.0"
+dependencies = [
+ "tllang",
+]
+
+[[package]]
+name = "tlrepl"
+version = "0.1.0"
+dependencies = [
+ "rustyline",
+ "tlmito",
 ]
 
 [[package]]
