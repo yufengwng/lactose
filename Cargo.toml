@@ -1,18 +1,18 @@
 [package]
-name = "tile"
+name = "tofu"
 version = "0.1.0"
 authors = ["Yufeng Wang <yufengwang05@gmail.com>"]
 edition = "2021"
 
 [workspace]
 members = [
-  "tllang",
-  "tlmito",
-  "tlproc",
-  "tlrepl",
+  "tflang",
+  "tfmito",
+  "tfproc",
+  "tfrepl",
 ]
 
 [dependencies]
 clap = { version = "3.1", features = ["derive"] }
-tlproc = { path = "tlproc" }
-tlrepl = { path = "tlrepl" }
+tfproc = { path = "tfproc" }
+tfrepl = { path = "tfrepl" }

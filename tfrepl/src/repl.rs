@@ -1,10 +1,17 @@
 use rustyline as rl;
 use rustyline::error::ReadlineError;
 
-use tlmito::value::Value;
-use tlmito::vm::MitoEnv;
-use tlmito::vm::MitoRes;
-use tlmito::vm::MitoVM;
+use tfmito::value::Value;
+use tfmito::vm::MitoEnv;
+use tfmito::vm::MitoRes;
+use tfmito::vm::MitoVM;
+
+const TF_INTRO: &str = "[[ tofu-lang ]]";
+const TF_PROMPT_LINE: &str = ">> ";
+const TF_PROMPT_CONT: &str = "·· "; // middot
+const TF_MULTI_START: &str = "\\;";
+const TF_MULTI_END: &str = ";;";
+const TF_RES_VAR: &str = "_";
 
 pub fn start() -> Result<(), String> {
     Repl::new().start()
@@ -32,7 +39,7 @@ impl Repl {
     }
 
     pub fn start(&mut self) -> Result<(), String> {
-        println!("[[ tile-lang ]]");
+        println!("{}", TF_INTRO);
         loop {
             let src = self.read_input()?;
             let src = match src {
@@ -45,7 +52,7 @@ impl Repl {
             match self.run(&src) {
                 Ok(val) => {
                     println!("{}", val);
-                    self.env.set("_", val);
+                    self.env.set(TF_RES_VAR, val);
                 }
                 Err(msg) => eprintln!("[E] {}", msg),
             }
@@ -61,14 +68,14 @@ impl Repl {
     }
 
     fn read_input(&mut self) -> Result<Option<String>, String> {
-        let line = self.read_line(">> ")?;
+        let line = self.read_line(TF_PROMPT_LINE)?;
         let line = match line {
             Some(ln) => ln,
             None => return Ok(None),
         };
 
         let line = line.trim();
-        if !line.ends_with("\\;") {
+        if !line.ends_with(TF_MULTI_START) {
             return Ok(Some(line.to_owned()));
         }
 
@@ -76,14 +83,14 @@ impl Repl {
         lines.push(line[..line.len() - 2].to_owned());
 
         loop {
-            let line = self.read_line("·· ")?; // middot
+            let line = self.read_line(TF_PROMPT_CONT)?;
             let line = match line {
                 Some(ln) => ln,
                 None => return Ok(None),
             };
 
             let line = line.trim();
-            if line.ends_with(";;") {
+            if line.ends_with(TF_MULTI_END) {
                 lines.push(line[..line.len() - 2].to_owned());
                 break;
             }

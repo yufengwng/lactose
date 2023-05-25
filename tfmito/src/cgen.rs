@@ -1,7 +1,7 @@
-use tllang::ast::Ast;
-use tllang::ast::Expr;
-use tllang::ast::Item;
-use tllang::ast::RelOp;
+use tflang::ast::Ast;
+use tflang::ast::Expr;
+use tflang::ast::Item;
+use tflang::ast::RelOp;
 
 use crate::code::Chunk;
 use crate::code::OpCode::*;

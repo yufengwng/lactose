@@ -7,6 +7,8 @@ use syn::{Ident, LitStr, Token};
 use syn::parse::{Parse, ParseStream};
 use syn::parse_macro_input;
 
+const TF_FILE_EXT: &str = ".tf";
+
 struct Args {
     name: Ident,
     dir: String,
@@ -45,7 +47,7 @@ where P: AsRef<Path> {
         let entry = entry.unwrap();
         let mdata = entry.metadata().unwrap();
         let name = entry.file_name().into_string().unwrap();
-        if mdata.is_file() && name.ends_with(".tl") {
+        if mdata.is_file() && name.ends_with(TF_FILE_EXT) {
             files.push((name, entry));
         } else if mdata.is_dir() {
             subdirs.push((name, entry));
@@ -55,7 +57,7 @@ where P: AsRef<Path> {
     files.sort_by(|a, b| a.0.cmp(&b.0));
     for entry in files {
         let (name, entry) = entry;
-        let ident = format_ident!("{}", name.replace(".tl", ""));
+        let ident = format_ident!("{}", name.replace(TF_FILE_EXT, ""));
         let path = syn::LitStr::new(entry.path().to_str().unwrap(), ident.span());
         out.push(quote! {
             #[test]

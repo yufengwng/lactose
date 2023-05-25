@@ -429,6 +429,34 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1141d4d61095b28419e22cb0bbf02755f5e54e0526f97f1e3d1d160e60885fb"
 
 [[package]]
+name = "tflang"
+version = "0.1.0"
+
+[[package]]
+name = "tfmito"
+version = "0.1.0"
+dependencies = [
+ "tflang",
+]
+
+[[package]]
+name = "tfproc"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "tfrepl"
+version = "0.1.0"
+dependencies = [
+ "rustyline",
+ "tfmito",
+]
+
+[[package]]
 name = "thiserror"
 version = "1.0.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -449,40 +477,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "tile"
+name = "tofu"
 version = "0.1.0"
 dependencies = [
  "clap",
- "tlproc",
- "tlrepl",
-]
-
-[[package]]
-name = "tllang"
-version = "0.1.0"
-
-[[package]]
-name = "tlmito"
-version = "0.1.0"
-dependencies = [
- "tllang",
-]
-
-[[package]]
-name = "tlproc"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "tlrepl"
-version = "0.1.0"
-dependencies = [
- "rustyline",
- "tlmito",
+ "tfproc",
+ "tfrepl",
 ]
 
 [[package]]

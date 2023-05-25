@@ -1,3 +1,3 @@
 ```
-# tile-lang
+# tofu-lang
 ```
