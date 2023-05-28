@@ -26,7 +26,11 @@ impl<'a> Lexer<'a> {
         let mut token = Token::new(kind, self.bytes());
         token.line = self.line;
         token.col = self.col;
-        self.shift();
+        if kind == TkNLine {
+            self.shift_line();
+        } else {
+            self.shift();
+        }
         token
     }
 
@@ -40,6 +44,7 @@ impl<'a> Lexer<'a> {
                 self.discard_comment();
                 self.next_token_kind()
             }
+            b'\n' => TkNLine,
             b';' => TkSemi,
             b'(' => TkLparen,
             b')' => TkRparen,
@@ -213,12 +218,15 @@ impl<'a> Lexer<'a> {
         self.head = self.curr;
     }
 
+    fn shift_line(&mut self) {
+        self.advance_line();
+        self.head = self.curr;
+    }
+
     fn skip_blanks(&mut self) {
         while !self.is_eof() && is_spacing(self.curr()) {
             if self.curr() == b'\n' {
-                self.consume();
-                self.advance_line();
-                self.head = self.curr;
+                break;
             } else {
                 self.consume();
             }
@@ -285,7 +293,13 @@ mod tests {
         let src = "# first\n# second\n123\n# last";
         let mut lexer = Lexer::new(src);
         let tok = lexer.scan();
+        assert_eq!(tok.kind, TkNLine);
+        let tok = lexer.scan();
+        assert_eq!(tok.kind, TkNLine);
+        let tok = lexer.scan();
         assert_eq!(tok.kind, TkInt);
+        let tok = lexer.scan();
+        assert_eq!(tok.kind, TkNLine);
         let tok = lexer.scan();
         assert_eq!(tok.kind, TkEof);
     }

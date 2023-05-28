@@ -37,12 +37,18 @@ impl<'a> Parser<'a> {
             if self.next.kind == TkErr {
                 return Err(format!("unrecognized character '{}'", self.next.lexeme()));
             }
-            self.consume_next(TkSemi, "expected ';' after expression")?;
+            let mut has_sep = false;
+            while self.next.kind == TkNLine || self.next.kind == TkSemi {
+                self.curr = self.next.clone();
+                self.next = self.lexer.scan();
+                has_sep = true;
+            }
+            if !has_sep {
+                return Err("expected ';' or newline after expression".to_owned());
+            }
             if self.next.kind != TkEof {
                 self.advance()?;
                 self.expression()?;
-            } else {
-                break;
             }
         }
 
@@ -60,12 +66,15 @@ impl<'a> Parser<'a> {
         match self.curr.kind {
             TkEof => Err(format!("reached end-of-file")),
             TkErr => Err(format!("unrecognized character '{}'", self.curr.lexeme())),
+            TkNLine => self.advance(),
             _ => Ok(()),
         }
     }
 
     fn consume_next(&mut self, tkind: TKind, message: &str) -> Result<(), String> {
-        if self.next.kind == tkind {
+        if self.next.kind == TkNLine {
+            return self.consume_next(tkind, message);
+        } else if self.next.kind == tkind {
             return self.advance();
         }
         Err(message.to_owned())
