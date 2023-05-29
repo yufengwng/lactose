@@ -80,4 +80,5 @@ pub enum Expr {
     Add(Box<Expr>, Box<Expr>),
     Sub(Box<Expr>, Box<Expr>),
     Relation(Box<Expr>, Vec<(RelOp, Expr)>),
+    Assign(String, Box<Expr>),
 }

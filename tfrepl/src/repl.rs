@@ -31,9 +31,11 @@ impl Repl {
     pub fn new() -> Self {
         let cfg = rl::Config::builder().edit_mode(rl::EditMode::Vi).build();
         let editor = rl::Editor::<()>::with_config(cfg);
+        let mut env = MitoEnv::with_builtins();
+        env.set(TF_RES_VAR, Value::Unit);
         Self {
             vm: MitoVM::new(),
-            env: MitoEnv::with_builtins(),
+            env,
             editor,
         }
     }

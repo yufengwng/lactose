@@ -71,6 +71,16 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn match_next(&mut self, tkind: TKind) -> Result<bool, String> {
+        // TODO: need to support newlines somehow
+        if self.next.kind == tkind {
+            self.advance()?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
     fn consume_next(&mut self, tkind: TKind, message: &str) -> Result<(), String> {
         if self.next.kind == TkNLine {
             return self.consume_next(tkind, message);
@@ -81,7 +91,7 @@ impl<'a> Parser<'a> {
     }
 
     fn expression(&mut self) -> Result<(), String> {
-        self.expr_precedence(Prec::Relation)
+        self.expr_precedence(Prec::Assign)
     }
 
     fn expr_precedence(&mut self, prec: Prec) -> Result<(), String> {
@@ -227,8 +237,16 @@ impl<'a> Parser<'a> {
     }
 
     fn expr_ident(&mut self) -> Result<(), String> {
-        let name = self.curr.lexeme();
-        self.stack.push(Expr::Ident(name.to_owned()));
+        let name = self.curr.lexeme().to_owned();
+        let expr = if self.match_next(TkEq)? {
+            self.advance()?;
+            self.expr_precedence(Prec::Assign.higher())?;
+            let rhs = self.stack.pop().unwrap();
+            Expr::Assign(name, Box::new(rhs))
+        } else {
+            Expr::Ident(name)
+        };
+        self.stack.push(expr);
         Ok(())
     }
 
@@ -288,6 +306,7 @@ impl<'a> Parser<'a> {
 #[derive(PartialEq, PartialOrd)]
 enum Prec {
     None = 0,
+    Assign,   // =
     Relation, // < > <= >= == !=
     Term,     // + -
     Factor,   // * / %
@@ -313,13 +332,15 @@ impl Prec {
             TkGtEq => Self::Relation,
             TkEqEq => Self::Relation,
             TkNotEq => Self::Relation,
+            TkEq => Self::Assign,
             _ => Self::None,
         }
     }
 
     fn higher(&self) -> Self {
         match self {
-            Self::None => Self::Relation,
+            Self::None => Self::Assign,
+            Self::Assign => Self::Relation,
             Self::Relation => Self::Term,
             Self::Term => Self::Factor,
             Self::Factor => Self::Unary,

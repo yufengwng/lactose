@@ -3,10 +3,10 @@ use std::rc::Rc;
 
 use tflang::parse::Parser;
 
-use crate::cgen::CodeGen;
-use crate::code::Chunk;
-use crate::code::OpCode;
-use crate::code::OpCode::*;
+use crate::bytecode::Chunk;
+use crate::bytecode::OpCode;
+use crate::bytecode::OpCode::*;
+use crate::codegen::CodeGen;
 use crate::value::FnNative;
 use crate::value::Value;
 
@@ -181,6 +181,14 @@ impl MitoVM {
                 let name = chunk.value(idx).as_str();
                 let val = env.get(&name).unwrap();
                 self.stack.push(val);
+            }
+            OpSet => {
+                let idx = chunk.code(self.ip) as usize;
+                self.ip += 1;
+                let name = chunk.value(idx).as_str();
+                let val = self.stack.pop().unwrap();
+                self.stack.push(Value::Unit);
+                env.set(&name, val);
             }
             OpCall => {
                 let count = chunk.code(self.ip) as usize;

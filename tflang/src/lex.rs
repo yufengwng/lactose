@@ -68,7 +68,13 @@ impl<'a> Lexer<'a> {
                     TkGt
                 }
             }
-            b'=' if self.matches(b'=') => TkEqEq,
+            b'=' => {
+                if self.matches(b'=') {
+                    TkEqEq
+                } else {
+                    TkEq
+                }
+            }
             b'!' if self.matches(b'=') => TkNotEq,
             b'0' if self.matches(b'b') => self.scan_bin(),
             b'0' if self.matches(b'x') => self.scan_hex(),

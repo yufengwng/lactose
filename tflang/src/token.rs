@@ -18,6 +18,7 @@ pub enum TKind {
     TkGtEq,
     TkEqEq,
     TkNotEq,
+    TkEq,
     TkTrue,
     TkFalse,
     TkInt,

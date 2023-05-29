@@ -124,6 +124,6 @@ impl FnNative {
 
 impl fmt::Display for FnNative {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "(native {})", self.name)
+        write!(f, "(native|{})", self.name)
     }
 }

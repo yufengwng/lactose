@@ -3,8 +3,8 @@ use tflang::ast::Expr;
 use tflang::ast::Item;
 use tflang::ast::RelOp;
 
-use crate::code::Chunk;
-use crate::code::OpCode::*;
+use crate::bytecode::Chunk;
+use crate::bytecode::OpCode::*;
 use crate::value::Value;
 
 pub struct CodeGen {}
@@ -94,6 +94,13 @@ impl CodeGen {
             }
             Expr::Call(callee, args) => {
                 self.emit_call(chunk, callee, args)?;
+            }
+            Expr::Assign(name, rhs) => {
+                self.emit_expr(chunk, rhs)?;
+                let name = Value::Str(name.to_owned());
+                let idx = chunk.add(name);
+                chunk.write(OpSet);
+                chunk.write_byte(idx as u8);
             }
         }
         Ok(())
