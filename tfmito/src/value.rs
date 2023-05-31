@@ -1,6 +1,8 @@
 use std::fmt;
 use std::rc::Rc;
 
+use crate::bytecode::Chunk;
+
 #[derive(Debug, Clone)]
 pub enum Value {
     Unit,
@@ -8,6 +10,7 @@ pub enum Value {
     Int(i32),
     Real(f64),
     Str(String),
+    Func(Rc<Function>),
     Native(Rc<FnNative>),
 }
 
@@ -30,6 +33,10 @@ impl Value {
 
     pub fn is_str(&self) -> bool {
         matches!(self, Self::Str(..))
+    }
+
+    pub fn is_func(&self) -> bool {
+        matches!(self, Self::Func(..))
     }
 
     pub fn is_native(&self) -> bool {
@@ -64,6 +71,13 @@ impl Value {
         }
     }
 
+    pub fn as_func(self) -> Rc<Function> {
+        match self {
+            Self::Func(func) => func,
+            _ => panic!(),
+        }
+    }
+
     pub fn as_native(self) -> Rc<FnNative> {
         match self {
             Self::Native(native) => native,
@@ -73,14 +87,15 @@ impl Value {
 
     pub fn is_eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Value::Bool(b1), Value::Bool(b2)) => *b1 == *b2,
-            (Value::Int(i1), Value::Int(i2)) => i1 == i2,
-            (Value::Int(i), Value::Real(f)) => (*i as f64) == *f,
-            (Value::Real(f), Value::Int(i)) => *f == (*i as f64),
-            (Value::Real(f1), Value::Real(f2)) => *f1 == *f2,
-            (Value::Str(s1), Value::Str(s2)) => *s1 == *s2,
-            (Value::Native(n1), Value::Native(n2)) => Rc::ptr_eq(n1, n2),
-            (Value::Unit, Value::Unit) => true,
+            (Self::Bool(b1), Self::Bool(b2)) => *b1 == *b2,
+            (Self::Int(i1), Self::Int(i2)) => i1 == i2,
+            (Self::Int(i), Self::Real(f)) => (*i as f64) == *f,
+            (Self::Real(f), Self::Int(i)) => *f == (*i as f64),
+            (Self::Real(f1), Self::Real(f2)) => *f1 == *f2,
+            (Self::Str(s1), Self::Str(s2)) => *s1 == *s2,
+            (Self::Func(fn1), Self::Func(fn2)) => Rc::ptr_eq(fn1, fn2),
+            (Self::Native(n1), Self::Native(n2)) => Rc::ptr_eq(n1, n2),
+            (Self::Unit, Self::Unit) => true,
             _ => false,
         }
     }
@@ -94,8 +109,48 @@ impl fmt::Display for Value {
             Self::Int(n) => write!(f, "{}", n),
             Self::Real(n) => write!(f, "{}", n),
             Self::Str(s) => write!(f, "{}", s),
+            Self::Func(func) => fmt::Display::fmt(func, f),
             Self::Native(native) => fmt::Display::fmt(native, f),
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct Function {
+    pub name: String,
+    pub arity: usize,
+    pub chunk: Chunk,
+}
+
+impl Function {
+    pub fn new(name: &str, arity: usize, chunk: Chunk) -> Self {
+        Self {
+            name: name.to_owned(),
+            arity,
+            chunk,
+        }
+    }
+
+    pub fn with_chunk(chunk: Chunk) -> Self {
+        Self {
+            name: String::new(),
+            arity: 0,
+            chunk,
+        }
+    }
+
+    pub fn empty() -> Self {
+        Self {
+            name: String::new(),
+            arity: 0,
+            chunk: Chunk::new(),
+        }
+    }
+}
+
+impl fmt::Display for Function {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "(fn|{})", self.name)
     }
 }
 
@@ -124,6 +179,6 @@ impl FnNative {
 
 impl fmt::Display for FnNative {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "(native|{})", self.name)
+        write!(f, "(fn-native|{})", self.name)
     }
 }

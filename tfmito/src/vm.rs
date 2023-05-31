@@ -3,11 +3,11 @@ use std::rc::Rc;
 
 use tflang::parse::Parser;
 
-use crate::bytecode::Chunk;
 use crate::bytecode::OpCode;
 use crate::bytecode::OpCode::*;
 use crate::codegen::CodeGen;
 use crate::value::FnNative;
+use crate::value::Function;
 use crate::value::Value;
 
 pub enum MitoRes {
@@ -45,14 +45,14 @@ impl MitoEnv {
 
 pub struct MitoVM {
     stack: Vec<Value>,
-    ip: usize,
+    frames: Vec<CallFrame>,
 }
 
 impl MitoVM {
     pub fn new() -> Self {
         Self {
             stack: Vec::new(),
-            ip: 0,
+            frames: Vec::new(),
         }
     }
 
@@ -65,16 +65,19 @@ impl MitoVM {
             Ok(ch) => ch,
             Err(msg) => return MitoRes::CompileErr(msg),
         };
-        self.execute(env, &chunk)
+        let func = Function::with_chunk(chunk);
+        self.execute(env, Rc::new(func))
     }
 
-    fn execute(&mut self, env: &mut MitoEnv, chunk: &Chunk) -> MitoRes {
-        self.ip = 0;
-        while self.ip < chunk.len() {
-            let byte = chunk.code(self.ip);
-            self.ip += 1;
-            let opcode = byte.try_into().unwrap();
-            self.dispatch(env, chunk, opcode);
+    fn execute(&mut self, env: &mut MitoEnv, func: Rc<Function>) -> MitoRes {
+        self.frames.push(CallFrame::new(func));
+        while !self.frames.is_empty() {
+            let frame = self.frames.last().unwrap();
+            if !frame.is_eof() {
+                self.dispatch(env);
+            } else {
+                self.frames.pop();
+            }
         }
         let res = if !self.stack.is_empty() {
             self.stack.pop().unwrap()
@@ -84,16 +87,16 @@ impl MitoVM {
         MitoRes::Ok(res)
     }
 
-    fn dispatch(&mut self, env: &mut MitoEnv, chunk: &Chunk, opcode: OpCode) {
-        match opcode {
+    fn dispatch(&mut self, env: &mut MitoEnv) {
+        let frame = self.frames.last_mut().unwrap();
+        match frame.read_opcode() {
             OpNop => return,
             OpUnit => self.stack.push(Value::Unit),
             OpTrue => self.stack.push(Value::Bool(true)),
             OpFalse => self.stack.push(Value::Bool(false)),
             OpConst => {
-                let idx = chunk.code(self.ip) as usize;
-                self.ip += 1;
-                let val = chunk.value(idx);
+                let idx = frame.read_usize();
+                let val = frame.value(idx);
                 self.stack.push(val);
             }
             OpAdd => {
@@ -176,23 +179,20 @@ impl MitoVM {
             OpJump => todo!(),
             OpBranch => todo!(),
             OpGet => {
-                let idx = chunk.code(self.ip) as usize;
-                self.ip += 1;
-                let name = chunk.value(idx).as_str();
+                let idx = frame.read_usize();
+                let name = frame.value(idx).as_str();
                 let val = env.get(&name).unwrap();
                 self.stack.push(val);
             }
             OpSet => {
-                let idx = chunk.code(self.ip) as usize;
-                self.ip += 1;
-                let name = chunk.value(idx).as_str();
+                let idx = frame.read_usize();
+                let name = frame.value(idx).as_str();
                 let val = self.stack.pop().unwrap();
                 self.stack.push(Value::Unit);
                 env.set(&name, val);
             }
             OpCall => {
-                let count = chunk.code(self.ip) as usize;
-                self.ip += 1;
+                let count = frame.read_usize();
                 let idx = self.stack.len() - count - 1;
                 let callee = self.stack[idx].clone();
                 self.dispatch_call(callee, count);
@@ -229,6 +229,39 @@ impl MitoVM {
         } else {
             val.as_real()
         }
+    }
+}
+
+struct CallFrame {
+    func: Rc<Function>,
+    ip: usize,
+}
+
+impl CallFrame {
+    fn new(func: Rc<Function>) -> Self {
+        Self { func, ip: 0 }
+    }
+
+    fn is_eof(&self) -> bool {
+        self.ip >= self.func.chunk.len()
+    }
+
+    fn value(&self, idx: usize) -> Value {
+        self.func.chunk.value(idx)
+    }
+
+    fn read_byte(&mut self) -> u8 {
+        let byte = self.func.chunk.code(self.ip);
+        self.ip += 1;
+        byte
+    }
+
+    fn read_opcode(&mut self) -> OpCode {
+        self.read_byte().try_into().unwrap()
+    }
+
+    fn read_usize(&mut self) -> usize {
+        self.read_byte() as usize
     }
 }
 

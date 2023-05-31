@@ -46,6 +46,7 @@ impl TryFrom<u8> for OpCode {
     }
 }
 
+#[derive(Debug)]
 pub struct Chunk {
     code: Vec<u8>,
     vals: Vec<Value>,
