@@ -205,9 +205,20 @@ impl MitoVM {
 
     fn dispatch_call(&mut self, callee: Value, count: usize) {
         match callee {
+            Value::Func(_) => self.call_func(callee.as_func(), count),
             Value::Native(_) => self.call_native(callee.as_native(), count),
             _ => panic!(),
         }
+    }
+
+    fn call_func(&mut self, func: Rc<Function>, count: usize) {
+        if func.arity != count {
+            eprintln!("expected {} arguments but got {}", func.arity, count);
+            return;
+        }
+        // TODO: check call stack overflow
+        let frame = CallFrame::new(func);
+        self.frames.push(frame);
     }
 
     fn call_native(&mut self, native: Rc<FnNative>, count: usize) {
