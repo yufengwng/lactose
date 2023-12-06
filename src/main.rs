@@ -4,15 +4,15 @@ use std::io::Read;
 use clap::Parser;
 use clap::Subcommand;
 
-use tfrepl::repl;
+use tbrepl::repl;
 
-const TF_ABOUT: &str = "the tofu language";
-const TF_USAGE: &str = "tofu <OPTIONS> [FILE | SUBCOMMAND ...]";
+const ABOUT: &str = "the table language";
+const USAGE: &str = "table <OPTIONS> [FILE | SUBCOMMAND ...]";
 
 #[derive(Parser)]
 #[clap(version)]
-#[clap(about = TF_ABOUT)]
-#[clap(override_usage = TF_USAGE)]
+#[clap(about = ABOUT)]
+#[clap(override_usage = USAGE)]
 #[clap(disable_colored_help = true)]
 struct Cli {
     #[clap(subcommand)]
@@ -25,6 +25,11 @@ struct Cli {
 enum Cmd {
     /// Start command-line interface (default)
     Cli,
+    /// Build program
+    Build {
+        /// Program file to build
+        file: String,
+    },
     /// Run script file
     Run {
         /// Script file to run
@@ -51,8 +56,13 @@ fn handle_default(cli: &Cli) {
 fn handle(cmd: &Cmd) {
     match cmd {
         Cmd::Cli => run_repl(),
+        Cmd::Build { file } => run_build(file),
         Cmd::Run { file } => run_script(file),
     }
+}
+
+fn run_build(_file: &str) {
+    println!("work-in-progress");
 }
 
 fn run_script(file: &str) {

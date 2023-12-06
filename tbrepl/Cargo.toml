@@ -1,8 +1,8 @@
 [package]
-name = "tfrepl"
+name = "tbrepl"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-tfmito = { path = "../tfmito" }
+tbmito = { path = "../tbmito" }
 rustyline = "9.1"

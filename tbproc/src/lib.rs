@@ -3,10 +3,10 @@ use proc_macro::TokenStream;
 mod testing;
 
 /// Proc-macro for generating integration test functions for script files in test suite directory.
-/// Script files must end with extension ".tl". Expects two arguments separated by comma:
+/// Script files must end with extension ".tr". Expects two arguments separated by comma:
 ///
 /// 1. An identifier for name of top-level module that will hold the tests.
-/// 2. A string literal for the path to test suite top-level directory.
+/// 2. A string literal for the path to top-level test suite directory.
 ///
 /// Each subdirectory will map to a new nested module. Each test function will call a
 /// `crate::test_script` function that must be implemented by the user and takes one argument for

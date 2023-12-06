@@ -1,17 +1,17 @@
 use rustyline as rl;
 use rustyline::error::ReadlineError;
 
-use tfmito::value::Value;
-use tfmito::vm::MitoEnv;
-use tfmito::vm::MitoRes;
-use tfmito::vm::MitoVM;
+use tbmito::value::Value;
+use tbmito::vm::MitoEnv;
+use tbmito::vm::MitoRes;
+use tbmito::vm::MitoVM;
 
-const TF_INTRO: &str = "[[ tofu-lang ]]";
-const TF_PROMPT_LINE: &str = ">> ";
-const TF_PROMPT_CONT: &str = "·· "; // middot
-const TF_MULTI_START: &str = "\\;";
-const TF_MULTI_END: &str = ";;";
-const TF_RES_VAR: &str = "_";
+const INTRO: &str = "[[ table-lang ]]";
+const PROMPT_LINE: &str = ">> ";
+const PROMPT_CONT: &str = "·· "; // middot
+const MULTI_START: &str = "\\;";
+const MULTI_END: &str = ";;";
+const RES_VAR: &str = "_";
 
 pub fn start() -> Result<(), String> {
     Repl::new().start()
@@ -32,7 +32,7 @@ impl Repl {
         let cfg = rl::Config::builder().edit_mode(rl::EditMode::Vi).build();
         let editor = rl::Editor::<()>::with_config(cfg);
         let mut env = MitoEnv::with_builtins();
-        env.set(TF_RES_VAR, Value::Unit);
+        env.set(RES_VAR, Value::Unit);
         Self {
             vm: MitoVM::new(),
             env,
@@ -41,7 +41,7 @@ impl Repl {
     }
 
     pub fn start(&mut self) -> Result<(), String> {
-        println!("{}", TF_INTRO);
+        println!("{}", INTRO);
         loop {
             let src = self.read_input()?;
             let src = match src {
@@ -54,7 +54,7 @@ impl Repl {
             match self.run(&src) {
                 Ok(val) => {
                     println!("{}", val);
-                    self.env.set(TF_RES_VAR, val);
+                    self.env.set(RES_VAR, val);
                 }
                 Err(msg) => eprintln!("[E] {}", msg),
             }
@@ -70,14 +70,14 @@ impl Repl {
     }
 
     fn read_input(&mut self) -> Result<Option<String>, String> {
-        let line = self.read_line(TF_PROMPT_LINE)?;
+        let line = self.read_line(PROMPT_LINE)?;
         let line = match line {
             Some(ln) => ln,
             None => return Ok(None),
         };
 
         let line = line.trim();
-        if !line.ends_with(TF_MULTI_START) {
+        if !line.ends_with(MULTI_START) {
             return Ok(Some(line.to_owned()));
         }
 
@@ -85,14 +85,14 @@ impl Repl {
         lines.push(line[..line.len() - 2].to_owned());
 
         loop {
-            let line = self.read_line(TF_PROMPT_CONT)?;
+            let line = self.read_line(PROMPT_CONT)?;
             let line = match line {
                 Some(ln) => ln,
                 None => return Ok(None),
             };
 
             let line = line.trim();
-            if line.ends_with(TF_MULTI_END) {
+            if line.ends_with(MULTI_END) {
                 lines.push(line[..line.len() - 2].to_owned());
                 break;
             }

@@ -3,9 +3,9 @@ use std::io::{self, BufRead};
 use std::path::Path;
 use std::process::Command;
 
-use tfproc::test_suite;
+use tbproc::test_suite;
 
-const TF_EXE_PATH: &str = "./target/debug/tofu";
+const EXE_PATH: &str = "./target/debug/table";
 
 test_suite!(suite, "./tests/suite");
 
@@ -34,7 +34,7 @@ where P: AsRef<Path> {
 
 fn run<P>(path: P) -> String
 where P: AsRef<Path> {
-    let output = Command::new(TF_EXE_PATH)
+    let output = Command::new(EXE_PATH)
         .arg(path.as_ref())
         .output()
         .expect("failed to run script");

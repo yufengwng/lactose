@@ -7,7 +7,7 @@ use syn::{Ident, LitStr, Token};
 use syn::parse::{Parse, ParseStream};
 use syn::parse_macro_input;
 
-const TF_FILE_EXT: &str = ".tf";
+const FILE_EXT: &str = ".tb";
 
 struct Args {
     name: Ident,
@@ -25,14 +25,12 @@ impl Parse for Args {
 
 pub fn proc_test_suite(input: TokenStream) -> TokenStream {
     let Args { name, dir } = parse_macro_input!(input as Args);
-
     let tests = build_tests(dir);
     let output = quote! {
         mod #name {
             #( #tests )*
         }
     };
-
     TokenStream::from(output)
 }
 
@@ -47,7 +45,7 @@ where P: AsRef<Path> {
         let entry = entry.unwrap();
         let mdata = entry.metadata().unwrap();
         let name = entry.file_name().into_string().unwrap();
-        if mdata.is_file() && name.ends_with(TF_FILE_EXT) {
+        if mdata.is_file() && name.ends_with(FILE_EXT) {
             files.push((name, entry));
         } else if mdata.is_dir() {
             subdirs.push((name, entry));
@@ -57,7 +55,7 @@ where P: AsRef<Path> {
     files.sort_by(|a, b| a.0.cmp(&b.0));
     for entry in files {
         let (name, entry) = entry;
-        let ident = format_ident!("{}", name.replace(TF_FILE_EXT, ""));
+        let ident = format_ident!("{}", name.replace(FILE_EXT, ""));
         let path = syn::LitStr::new(entry.path().to_str().unwrap(), ident.span());
         out.push(quote! {
             #[test]

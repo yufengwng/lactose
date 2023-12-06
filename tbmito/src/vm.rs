@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use tflang::parse::Parser;
+use tblang::parse::Parser;
 
 use crate::bytecode::OpCode;
 use crate::bytecode::OpCode::*;

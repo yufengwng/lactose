@@ -1,20 +1,22 @@
 [package]
-name = "tofu"
+name = "table"
 version = "0.1.0"
 authors = ["Yufeng Wang <yufengwang05@gmail.com>"]
 edition = "2021"
 
 [workspace]
 members = [
-  "tflang",
-  "tfmito",
-  "tfproc",
-  "tfrepl",
+  "tblang",
+  "tblift",
+  "tbmito",
+  "tbproc",
+  "tbrepl",
 ]
 
 [dependencies]
 clap = { version = "3.1", features = ["derive"] }
-tfrepl = { path = "tfrepl" }
+tblift = { path = "tblift" }
+tbrepl = { path = "tbrepl" }
 
 [dev-dependencies]
-tfproc = { path = "tfproc" }
+tbproc = { path = "tbproc" }

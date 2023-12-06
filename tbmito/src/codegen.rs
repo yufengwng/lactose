@@ -1,7 +1,7 @@
-use tflang::ast::Ast;
-use tflang::ast::Expr;
-use tflang::ast::Item;
-use tflang::ast::RelOp;
+use tblang::ast::Ast;
+use tblang::ast::Expr;
+use tblang::ast::Item;
+use tblang::ast::RelOp;
 
 use crate::bytecode::Chunk;
 use crate::bytecode::OpCode::*;
